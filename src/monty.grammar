@@ -1,0 +1,686 @@
+{
+    function Pos(line, column){
+        this.line = line;
+        this.column = column;
+
+        this.toString = function(){
+            return "line "+this.line+", column "+this.column;
+        }
+    }
+
+    // ---------------------------------------------------------------
+    
+    function Node(pos, name){
+        this.pos = pos;
+        this.name = name;
+
+        this.toString = function(){
+            return this.name + " at " + this.pos.toString();
+        }
+    }
+
+    // ---------------------------------------------------------------
+    
+    WhileLoop.prototype = new Node();
+    WhileLoop.prototype.constructor = WhileLoop;
+    function WhileLoop(pos, condition, body){
+        this.name = "WhileLoop";
+        this.condition = condition;
+        this.body = body;
+        this.pos = pos;
+    }
+
+    // ---------------------------------------------------------------
+    
+    Literal.prototype = new Node();
+    Literal.prototype.constructor = Literal;
+    function Literal(pos, value, type){
+        this.name = "Literal";
+        this.pos = pos;
+        this.value = value;
+        this.type = type || null;
+
+        this.eval = function(){
+            return this.value;
+        }
+    }
+
+    // ---------------------------------------------------------------
+    
+    FunctionCall.prototype = new Node();
+    FunctionCall.prototype.constructor = FunctionCall;
+    function FunctionCall(pos, functionName, parameters, type){
+        this.name = "FunctionCall";
+        this.pos = pos;
+        this.functionName = functionName;
+        this.parameters = parameters;
+        this.type = type || null;
+        /* FIXME: brauche ich type?*/
+    }
+
+    // ---------------------------------------------------------------
+    
+    VariableDeclaration.prototype = new Node();
+    VariableDeclaration.prototype.constructor = VariableDeclaration;
+    function VariableDeclaration(pos, varName, type, constant){
+        this.name = "VariableDeclaration";
+        this.pos = pos;
+        this.variableName = varName;
+        this.type = type;
+        this.constant = constant || false;
+    }
+
+    // ---------------------------------------------------------------
+    
+    FunctionDeclaration.prototype = new Node();
+    FunctionDeclaration.prototype.constructor = FunctionDeclaration;
+    function FunctionDeclaration(pos, funName, params, returnType, body){
+        this.name = "FunctionDeclaration";
+        this.pos = pos;
+        this.functionName = funName;
+        this.parameters = params;
+        this.returnType = returnType;
+        this.body = body;
+    }
+
+    // ---------------------------------------------------------------
+    
+    VariableAccess.prototype = new Node();
+    VariableAccess.prototype.constructor = VariableAccess;
+    function VariableAccess(pos, varName){
+        this.name = "VariableAccess";
+        this.pos = pos;
+        this.variableName = varName;
+    }
+
+    // ---------------------------------------------------------------
+    
+    Assignment.prototype = new Node();
+    Assignment.prototype.constructor = Assignment;
+    function Assignment(pos, left, right){
+        this.name = "Assignment";
+        this.pos = pos;
+        this.left = left;
+        this.right = right;
+    }
+
+    // ---------------------------------------------------------------
+    
+    CommandStatement.prototype = new Node();
+    CommandStatement.prototype.constructor = CommandStatement;
+    function CommandStatement(pos, command, argument){
+        this.name = "CommandStatement";
+        this.pos = pos;
+        this.command = command;
+        this.argument = argument;
+    }
+
+
+    // ---------------------------------------------------------------
+
+    Block.prototype = new Node();
+    Block.prototype.constructor = Block;
+    function Block(pos, statements){
+        this.name = "Block";
+        this.statements = statements;
+        this.pos = pos;
+    }
+    
+    // ---------------------------------------------------------------
+
+    function getCurrentPos(){
+        var loc = location();
+        return new Pos(loc.start.line, loc.start.column);
+    }
+
+    // ---------------------------------------------------------------
+    // -- Indentation & White-Spaces ---------------------------------
+    // ---------------------------------------------------------------
+    var nesting = 0;
+    var indentStack = [];
+    var currentIndent = "";
+
+    // ---------------------------------------------------------------
+    // -- Integer Literals -------------------------------------------
+    // ---------------------------------------------------------------
+
+    function convertToInt(str, base){
+        str = str.toUpperCase();
+        base = base || 10;
+        if((base < 0)||(base > 36)){
+            return NaN;
+        }
+    
+        var current = str.charCodeAt(0);
+        var result = current > 57 ? current-55 : current-48;
+        if((result > base) || (result < 0)){
+            return NaN;
+        }
+        var len = str.length;
+        for (var i=1; i < len; i++){
+            result *= base;
+            current = str.charCodeAt(i)
+            var value = current > 57 ? current-55 : current-48;
+            if((value > base) || (value < 0)){
+                return NaN;
+            }
+            result += value;
+        }
+        return result;
+    }
+
+
+    // ---------------------------------------------------------------
+    // -- String Literals --------------------------------------------
+    // ---------------------------------------------------------------
+
+    function getStringEscapeValue(escapeSequence){
+        switch(escapeSequence){
+            case "\\t":
+                return "\t";
+            case "\\b":
+                return "\b";
+            case "\\n":
+                return "\n";
+            case "\\r":
+                return "\r";
+            case "\\f":
+                return "\f";
+            case "\\'":
+                return "'";
+            case "\\\"":
+                return "\"";
+            case "\\\\":
+                return "\\";
+        }
+        var numCount = 0;
+        if(escapeSequence.charAt(1) == "x"){
+            numCount = 2;
+        }
+        else if(escapeSequence.charAt(1) == "u"){
+            numCount = 4;
+        }
+        return String.fromCharCode(parseInt(escapeSequence.substr(2, numCount), 16));
+    }
+    
+    function flattenStringLiteral(obj, raw){
+        raw = raw || false;
+        var len = obj.length;
+        var output = "";
+        var current;
+        for(var i = 0; i < len; i++){
+            current = obj[i];
+            if(current === undefined){
+                continue;
+            }
+            if(Array.isArray(current)){
+                output += flattenStringLiteral(current, raw);
+            }
+            else if((!raw)&&(current.startsWith("\\"))){
+                output += getStringEscapeValue(current);
+            }
+            else{
+                output += current;
+            }
+        }
+        return output;
+    }
+}
+
+// -------------------------------------------------------------------
+// -- The Grammar ----------------------------------------------------
+// -------------------------------------------------------------------
+
+moduleDeclaration = /*importLine* */
+    (classDeclaration / statement)*
+
+declaration = independentDeclaration
+            / classDeclaration
+            /*/ caseClassDeclaration
+            / generatorDeclaration*/
+
+declWithAssignment = vardecl:(variableDeclaration / constantDeclaration)
+                        _ ':=' _ value:expression
+                            {
+                                return [
+                                    vardecl,
+                                    new Assignment(getCurrentPos(),
+                                        new VariableAccess(vardecl.pos,
+                                                        vardecl.name),
+                                        value)
+                                    ];
+                            }
+
+independentDeclaration = functionDeclaration
+                        / (decl:(declWithAssignment
+                            / constantDeclaration
+                            / variableDeclaration) EOL
+                            { return decl; }
+                            )
+                        
+
+classDeclaration = abstract:'abstract'? 'class'
+                    classname:type ('inherits' superclasses:typeList)?
+                    ':' EOL
+                    INDENT
+                    (members:memberDeclaration+ / 'pass' EOL)
+                    DEDENT
+
+
+/*caseClassDeclaration
+  : 'case' 'class' type '(' (parameterListWithoutDefaults)? ')' ('inherits' typeList)?
+    (':' EOL
+    INDENT
+        (memberDeclaration+ / 'pass' EOL)
+    DEDENT)?
+  ;*/
+
+memberDeclaration = accessModifier? _ independentDeclaration
+                / accessModifier? _ abstractMethodDeclaration
+
+abstractMethodDeclaration = 'abstract' ret:type? name:Identifier
+                            Lparenthesis params:parameterList? Rparenthesis EOL
+
+accessModifier = '#' / '+' / '-' / '~'
+
+variableDeclaration = type:type _ name:Identifier
+                    {
+                        return new VariableDeclaration(getCurrentPos(),
+                            name, type);
+                    }
+constantDeclaration = type:type _ name:ConstantIdentifier
+                    {
+                        return new VariableDeclaration(getCurrentPos(),
+                            name, type, true);
+                    }
+
+type = ClassIdentifier
+      /*('<' typeList '>')?
+      / '(' (type (',' type)+)? ')'
+      / type '->' type
+      / '(' type '->' type ')'
+      */
+
+typeList = type (',' type)*
+
+
+functionDeclaration = ret:(type?) _ name:Identifier
+            Lparenthesis params:parameterList? Rparenthesis
+            body:block
+            {
+                return new FunctionDeclaration(getCurrentPos(),
+                                                name, params, ret, body);
+            }
+
+/*generatorDeclaration
+    : 'generator' type
+      ClassIdentifier
+      Lparenthesis parameterList? Rparenthesis 
+      block
+    ;
+*/
+
+parameterList = defaultParameterList
+                / (params:parameterListWithoutDefaults
+                    defaults:(',' _ def:defaultParameterList {return def;})?
+                        {
+                            var list = params;
+                            if(defaults != null){
+                                list = list.concat(defaults);
+                            }
+                            return list;
+                        }
+                    )
+
+parameterListWithoutDefaults = head:variableDeclaration !( _ ':=')
+                                tail:((',' _ variableDeclaration !( _ ':=') _)*)
+            {
+                var list = [head];
+                for(var i=0; i < tail.length; i++){
+                    list.push(tail[i][1]);
+                }
+                return list;
+            }
+
+defaultParameterList = head:declWithAssignment
+                        tail:((',' _ declWithAssignment _)*)
+            {
+                var list = [head];
+                for(var i=0; i < tail.length; i++){
+                    list.push(tail[i][1]);
+                }
+                return list;
+            }
+
+block = ':' EOL INDENT _ statements:(statement+ / 'pass' EOL) _ DEDENT
+        {
+            var body = []
+            if(statements[0] != "pass"){
+                body = statements;
+            }
+            return new Block(getCurrentPos, body);
+        }
+
+statement = declaration
+        / whileStatement
+        / forStatement
+        / ifStatement
+        / tryStatement
+        / unpackAssignment
+        / assignment
+        / compoundAssignment
+        / functionCallStm
+        / stmWithEOL
+        // caseStatement
+
+functionCallStm = call:functionCall EOL { return call; }
+
+stmWithEOL = commandStm EOL
+            / left:expression operator:'.' right:functionCall EOL
+
+commandStm = (cmd:('return' / 'yield' / 'raise') _nonchar_ _ exp:expression?
+                { return new CommandStatement(getCurrentPos(), cmd, exp); })
+            / ( cmd:('skip' / 'break')
+                { return new CommandStatement(getCurrentPos(), cmd, null); })
+
+/* while loop: The expression must be a condition (i.e. Boolean expression). */
+whileStatement = 'while' _nonchar_ _ cond:expression _ body:block
+                { return new WhileLoop(getCurrentPos(), cond, body); }
+
+/* for loop: The expression must be of type Iterable<T>. */
+forStatement = 'for' Identifier 'in' expression block
+
+ifStatement = 'if' cond:expression thenBlock:block
+    elif*
+    ('else' elseBlock:block)?
+
+elif = 'elif' elifCondition:expression elifBlock:block
+
+tryStatement = 'try' block
+    ('handle' variableDeclaration? handleBlock:block)+
+
+assignment = left:expression ':=' right:expression EOL
+
+unpackAssignment = left:unpackList ':=' right:expression EOL
+unpackList = unpackable (',' unpackable)+
+unpackable = expression / variableDeclaration
+
+compoundAssignment = left:expression compoundSymbol right:expression EOL
+compoundSymbol = operator:('+=' / '-=' / '*=' / '/=' / '%=' / '^=')
+
+functionCall = funName:(type / Identifier)
+                Lparenthesis params:expressionList? Rparenthesis
+                {
+                    params = params || [];
+                    return new FunctionCall(getCurrentPos(), funName, params);
+                }
+expressionList = head:expression tail:((',' _ expression _)*)
+            {
+                var list = [head];
+                for(var i=0; i < tail.length; i++){
+                    list.push(tail[i][1]);
+                }
+                return list;
+            }
+
+expression = primary
+            / functionExpression
+            / functionCall
+            // cond:expression 'if' trueval:expression 'else' falseval:expression
+            // left:expression accessOperator right:expression
+            /*/ <assoc=right> (plusMinusOperator / notOperator) singleExpression=expression
+            / <assoc=right> left=expression powerOperator right=expression
+            / left=expression dotOperator right=expression
+            / left=expression plusMinusOperator right=expression
+            / left=expression compareOperator right=expression
+            / left=expression eqOperator right=expression
+            / left=expression inOperator right=expression
+            / left=expression andOperator right=expression
+            / left=expression orOperator right=expression
+            / expr=expression asOperator type
+            / expr=expression isOperator ClassIdentifier
+            / listComprehension*/
+
+functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->' expression
+
+primary = Lparenthesis exp:expression Rparenthesis
+        / literal
+        / Identifier
+        / ConstantIdentifier
+        / 'self'
+        / 'parent(' parent:type ')'
+
+/*inOperator
+  : operator='in'
+  ;
+
+andOperator
+  : operator='and'
+  ;
+
+orOperator
+  : operator=('or' / 'xor')
+  ;
+
+asOperator
+  : operator='as'
+  ;
+
+isOperator
+  : operator='is'
+  ;
+
+eqOperator
+  : operator=('=' / '!=')
+  ;
+
+compareOperator
+  : operator=('<' / '>' / '>=' / '<=')
+  ;
+
+powerOperator
+  : operator='^'
+  ;
+
+plusMinusOperator
+  : operator=('+' / '-')
+  ;
+
+notOperator
+  : operator='not'
+  ;
+  */
+
+accessOperator = '.'
+
+/*dotOperator = operator=('*' / '/' / '%')*/
+
+literal = IntLiteral
+        / FloatLiteral
+        / CharLiteral
+        / StringLiteral
+        / BoolLiteral
+/*  / arrayLiteral
+  / rangeLiteral
+  / tupleLiteral*/
+
+/*rangeLiteral
+  : Lbracket expression '..' expression Rbracket
+  ;
+
+arrayLiteral
+  : Lbracket (expression (',' expression)*)? Rbracket
+  ;
+
+tupleLiteral
+  : Lparenthesis (expression (',' expression)+)? Rparenthesis
+  ;
+
+listComprehension
+  : Lbracket type expression '/' listGenerator ( ',' listGenerator)? Rbracket
+  ;
+
+listGenerator
+  : Identifier 'in' expression listFilter?
+  ;
+
+listFilter
+  : 'if' expression
+  ;
+*/
+
+
+/* pattern matching */
+
+/*
+caseStatement
+  : 'case' expression 'of' caseBlock
+  ;
+
+caseBlock
+  : INDENT
+      (pattern block)+
+    DEDENT
+  ;
+
+patternGuard
+  : 'if' expression
+  ;
+
+pattern
+  : (typedPattern
+  / '_'
+  / compoundPattern
+  / expression) patternGuard?
+  ;
+
+typedPattern
+  : type Identifier
+  / type ('_')?
+  ;
+
+compoundPattern
+  : type? '(' patternList? ')'
+  ;
+
+patternList
+  : pattern (',' pattern )*
+  ;
+*/
+
+
+// ----------------------------------------------
+
+BoolLiteral = value:('true' / 'false')
+            { return new Literal(getCurrentPos(), value == 'true', "Bool");}
+
+// --- Number Literals -----------------------------------------------
+
+IntLiteral = firstDigit:Digit 
+            digits:(Digit / Letter)*
+            base:Base?
+            {
+                var numString = firstDigit+digits.join("");
+                var baseNum = 10;
+                if(base != null){
+                    baseNum = convertToInt(base, 10);
+                }
+                return new Literal(getCurrentPos(),
+                                    convertToInt(numString, baseNum), "Int");
+            }
+
+FloatLiteral = FloatPointLiteral / FloatExponentLiteral
+FloatPointLiteral = int:Digit* '.' frac:Digit*
+                    {
+                        return new Literal(getCurrentPos(),
+                                    parseFloat(int.join("")+"."+frac.join("")),
+                                    "Float");
+                    }
+FloatExponentLiteral = int:Digit* e:[Ee] sign:[+-]? exp:Digit*
+                    {
+                        if(sign == null){sign = "+";}
+                        return new Literal(getCurrentPos(),
+                            parseFloat(int.join("")+e+sign+exp.join("")),
+                            "Float");
+                    }
+
+Base = '_' base:Digit+ {return base.join("")}
+  
+
+// -------------------------------------------------------------------
+// -- String and Character Literals ----------------------------------
+// -------------------------------------------------------------------
+
+StringLiteral = raw:'raw'? '"' content:(StringEscapeSequence
+                                    / ((!'\\' !'"' !'\n' !'\r') .))* '"'
+                {return new Literal(getCurrentPos(),
+                                    flattenStringLiteral(content, raw=="raw"),
+                                    "String");}
+
+CharLiteral = '\'' content:(StringEscapeSequence
+                            / ((!'\\' !'\'' !'\n' !'\r') .)) '\''
+                {return new Literal(getCurrentPos(),
+                                    flattenStringLiteral(content, false),
+                                    "Char");}
+                
+StringEscapeSequence = slash:'\\'
+                    esc:('t' / 'b' / 'n' / 'r' / 'f' / '\'' / '\"' / '\\' 
+                    / ('u' HexDigit HexDigit HexDigit HexDigit )
+                    / ('x' HexDigit HexDigit ))
+                    { return Array.isArray(esc)
+                                ? slash+esc.join("")
+                                : slash+esc; }
+
+HexDigit = [0-9A-Fa-f]
+
+// -------------------------------------------------------------------
+// -- Identifiers ----------------------------------------------------
+// -------------------------------------------------------------------
+
+Identifier = a:'_'*
+             b:LowercaseLetter
+             c:IdentifierCharacter*
+             {return a.join("")+b+c.join("");}
+ConstantIdentifier = a:'_'*
+                     b:UppercaseLetter
+                     c:( UppercaseLetter / Digit / '_' )*
+                     {return a.join("")+b+c.join("");}
+ClassIdentifier = a:UppercaseLetter
+                  b:NonLowercaseIdentifierCharacter*
+                  c:LowercaseLetter
+                  d:IdentifierCharacter*
+                  {return a+b.join("")+c+d.join("")}
+IdentifierCharacter = LowercaseLetter / UppercaseLetter / Digit / '_'
+NonLowercaseIdentifierCharacter = UppercaseLetter / Digit / '_'
+
+Digit = [0-9]
+Letter = [a-zA-Z]
+LowercaseLetter = [a-z]
+UppercaseLetter = [A-Z]
+
+// -- EOL INDENT DEDENT ----------------------------------
+
+EOL = _ ('\r\n' / '\r' / '\n')+ SAMEDENT? { return "EOL"; }
+
+SAMEDENT = i:[ \t]* &{ return i.join("") === currentIndent; }
+
+INDENT = &(i:[ \t]+ &{ return i.length > currentIndent.length; }
+      { indentStack.push(currentIndent); currentIndent = i.join(""); })
+
+DEDENT = !{ currentIndent = indentStack.pop(); }
+        {return (new Pos(location().end.line, location().end.column)).toString();}
+
+// -- brackets --------------------------------------------
+
+Lparenthesis = _ '(' _ {nesting++;}
+Rparenthesis = _ ')' _ {nesting--;}
+Lbracket = _ '[' _ {nesting++;}
+Rbracket = _  ']'_  {nesting--;}
+Lcurly = _ '{' _ {nesting++;}
+Rcurly = _ '}' _ {nesting--;}
+
+// -- white spaces --------------------------------------------
+
+_ = (' ' / '\t' )* { return null; }
+__ = (' ' / '\t' )+ { return null; }
+_nonchar_ = !([a-zA-Z]) { return null; }

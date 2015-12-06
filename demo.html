@@ -1,0 +1,69 @@
+<!-- http://pegjs.org/online -->
+<html>
+  <head>
+    <title></title>
+    <meta content="">
+    <style></style>
+  </head>
+  <body>
+    <textarea id="input" style="width: 800px; height: 500px;"></textarea>
+    <button onclick="parse()">run</button>
+    <textarea id="output" style="width: 800px; height: 500px;"></textarea>
+
+<textarea id="grammar">
+{
+    var nesting = 0;
+    var indentationStack = [0];
+}
+start = line+ 
+
+line = [a-z]*  EOL
+
+EOL = LineBreak+
+        indentation:((' ' / '\t' )*)
+        {
+          if(nesting > 0)
+            {
+              return null;
+            }
+            var indentLevel = indentationStack[indentationStack.length - 1];
+            var tokens = ["EOF"];
+            if(indentLevel < indentation.length){
+                while(indentationStack[indentationStack.length - 1] > indentLevel)
+                {
+                    indentationStack.pop();
+                    tokens.push("DEDENT");
+                }
+                /* if the new indentation does not match any outer level,
+                   we have a problem: */
+                if(indentationStack[indentationStack.length - 1] != indentLevel)
+                {
+                    tokens.push("BADDENT");
+                }
+            }
+            else if(indentLevel > indentation.length){
+              indentationStack.push(indentation.length);
+                return ["EOL", "INDENT"];
+            }
+            
+            /*return offset;*/
+            
+          /*return "EOL";*/
+        }
+
+LineBreak = ('\t' / ' ' / ('//' (!'\n' .)*))* (('\u000C')?('\r')? '\n' )
+</textarea>
+
+    <script type="application/javascript" src="peg-0.9.0.min.js"></script>
+    
+    <script type="application/javascript">
+        var grammar = document.getElementById("grammar").value;
+        // var parser = PEG.buildParser(, {output : "source"});
+        var parser = PEG.buildParser(grammar, {output : "parser"});
+        
+        function parse(){
+            console.log(parser.parse(document.getElementById("input").value));
+        }
+    </script>
+  </body>
+</html>
