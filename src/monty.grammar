@@ -425,10 +425,10 @@ statement = declaration
         / whileStatement
         / forStatement
         / ifStatement
-        / tryStatement
-        / unpackAssignment
+        // tryStatement
+        // unpackAssignment
         / assignment
-        / compoundAssignment
+        // compoundAssignment
         / functionCallStm
         / stmWithEOL
         // caseStatement
@@ -471,17 +471,19 @@ elif = 'elif' _nonchar_ _ elifCondition:expression _ elifBlock:block
                 };
         }
 
-tryStatement = 'try' block
-    ('handle' variableDeclaration? handleBlock:block)+
+/*tryStatement = 'try' block
+    ('handle' variableDeclaration? handleBlock:block)+ */
 
-assignment = left:expression ':=' right:expression EOL
+assignment = left:expression _ ':=' _ right:expression EOL
+            { return new Assignment(getCurrentPos(), left, right); }
 
-unpackAssignment = left:unpackList ':=' right:expression EOL
+/*unpackAssignment = left:unpackList ':=' right:expression EOL
 unpackList = unpackable (',' unpackable)+
-unpackable = expression / variableDeclaration
+unpackable = expression / variableDeclaration */
 
-compoundAssignment = left:expression compoundSymbol right:expression EOL
+/*compoundAssignment = left:expression compoundSymbol right:expression EOL
 compoundSymbol = operator:('+=' / '-=' / '*=' / '/=' / '%=' / '^=')
+*/
 
 functionCall = funName:(type / Identifier)
                 Lparenthesis params:expressionList? Rparenthesis
@@ -518,12 +520,13 @@ expression = primary
 
 functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->' expression
 
-primary = Lparenthesis exp:expression Rparenthesis
+primary = Lparenthesis exp:expression Rparenthesis { return exp }
         / literal
-        / Identifier
-        / ConstantIdentifier
-        / 'self'
-        / 'parent(' parent:type ')'
+        / name:Identifier { return new VariableAccess(getCurrentPos(), name); }
+        / name:ConstantIdentifier
+            { return new VariableAccess(getCurrentPos(), name); }
+        / 'self' { return new SelfExpression(getCurrentPos()); }
+        // 'parent(' parent:type ')'
 
 /*inOperator
   : operator='in'
