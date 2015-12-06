@@ -1,0 +1,78 @@
+
+{
+    function BinaryExpression(left, op, right){
+        this.left = left;
+        this.op = op;
+        this.right = right;
+    }
+
+    function leftAssociative(lefts, right) {
+        if (!lefts.length) return right;
+        var last = lefts.pop();
+        return new BinaryExpression(leftAssociative(lefts, last[0]), last[1], right);
+    }
+}
+
+expression = asExpression
+nonBinaryExpression = literal
+
+literal = [0-9]
+
+asExpression = lefts:(orExpression 'as')* right:orExpression
+                { return leftAssociative(lefts, right); }
+
+orExpression = lefts:(andExpression 'or')* right:andExpression
+                { return leftAssociative(lefts, right); }
+
+andExpression = lefts:(inExpression 'and')* right:inExpression
+                { return leftAssociative(lefts, right); }
+
+inExpression = lefts:(eqExpression 'in')* right:eqExpression
+                { return leftAssociative(lefts, right); }
+
+eqExpression = lefts:(cmpExpression ('=' / '!=' / 'is'))* right:cmpExpression
+                { return leftAssociative(lefts, right); }
+
+cmpExpression = lefts:(addExpression ('<' / '>' / '<=' / '>='))*
+                right:addExpression
+                { return leftAssociative(lefts, right); }
+
+addExpression = lefts:(mulExpression ('+' / '-'))* right:mulExpression
+                { return leftAssociative(lefts, right); }
+
+mulExpression = lefts:(powExpression ('*' / '/' / '%' ))* right:powExpression
+                { return leftAssociative(lefts, right); }
+
+/* power is right-associative */
+powExpression = left:nonBinaryExpression op:('^') right:powExpression
+                { return new BinaryExpression(left, op, right)}
+            / nonBinaryExpression
+
+/* unary minus and not */
+/*accessExpression '.' */
+
+/* <assoc=right> (plusMinusOperator / notOperator) singleExpression=expression*/
+
+// unary minus 
+// logical not 
+// -----------
+// power ^
+// -----------
+// multiplication
+// division
+// modulo
+// -----------
+// addition
+// subtraction
+// -----------
+// < <= > >=
+// -----------
+// = != is
+// -----------
+// in
+// -----------
+// and
+// -----------
+// or
+// -----------
+// as
