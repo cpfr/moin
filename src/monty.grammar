@@ -59,8 +59,18 @@
     }
 
     // ---------------------------------------------------------------
+
+    Declaration.prototype = new Node();
+    Declaration.prototype.constructor = Declaration;
+    function Declaration(pos, visibility){
+        this.name = "Declaration";
+        this.pos = pos;
+        this.visibility = visibility || "~";
+    }
+
+    // ---------------------------------------------------------------
     
-    VariableDeclaration.prototype = new Node();
+    VariableDeclaration.prototype = new Declaration();
     VariableDeclaration.prototype.constructor = VariableDeclaration;
     function VariableDeclaration(pos, varName, type, constant){
         this.name = "VariableDeclaration";
@@ -81,6 +91,19 @@
         this.parameters = params;
         this.returnType = returnType;
         this.body = body;
+    }
+
+    // ---------------------------------------------------------------
+    
+    ClassDeclaration.prototype = new Node();
+    ClassDeclaration.prototype.constructor = ClassDeclaration;
+    function ClassDeclaration(pos, clsName, superClasses, body, abstract){
+        this.name = "ClassDeclaration";
+        this.pos = pos;
+        this.className = clsName;
+        this.superClasses = superClasses;
+        this.body = body;
+        this.abstract = abstract || false;
     }
 
     // ---------------------------------------------------------------
@@ -259,12 +282,16 @@ independentDeclaration = functionDeclaration
                             )
                         
 
-classDeclaration = abstract:'abstract'? 'class'
-                    classname:type ('inherits' superclasses:typeList)?
-                    ':' EOL
-                    INDENT
-                    (members:memberDeclaration+ / 'pass' EOL)
-                    DEDENT
+classDeclaration = abstract:('abstract' _)? 'class' _nonchar_ _
+                    className:type superClasses:( _ 'inherits' _nonchar_ _
+                                            types:typeList {return types;})?
+                    ':' EOL INDENT _
+                    members:(memberDeclaration+ / ('pass' EOL {return [];}))
+                    _ DEDENT
+                    {
+                        return new ClassDeclaration(getCurrentPos(),
+                            className, superClasses, members, abstract!=null);
+                    }
 
 
 /*caseClassDeclaration
@@ -275,8 +302,15 @@ classDeclaration = abstract:'abstract'? 'class'
     DEDENT)?
   ;*/
 
-memberDeclaration = accessModifier? _ independentDeclaration
-                / accessModifier? _ abstractMethodDeclaration
+memberDeclaration = visibility:accessModifier? _
+                    decl:(independentDeclaration / abstractMethodDeclaration)
+                    {
+                        var member = decl;
+                        if(visibility != null){
+                            member.visibility = visibility;
+                        }
+                        return member;
+                    }
 
 abstractMethodDeclaration = 'abstract' ret:type? name:Identifier
                             Lparenthesis params:parameterList? Rparenthesis EOL
@@ -301,7 +335,14 @@ type = ClassIdentifier
       / '(' type '->' type ')'
       */
 
-typeList = type (',' type)*
+typeList = head:type tail:((',' _ type)*)
+            {
+                var list = [head];
+                for(var i=0; i < tail.length; i++){
+                    list.push(tail[i][2]);
+                }
+                return list;
+            }
 
 
 functionDeclaration = ret:(type?) _ name:Identifier
