@@ -25,9 +25,21 @@
     WhileLoop.prototype.constructor = WhileLoop;
     function WhileLoop(pos, condition, body){
         this.name = "WhileLoop";
+        this.pos = pos;
         this.condition = condition;
         this.body = body;
+    }
+
+    // ---------------------------------------------------------------
+    
+    IfStatement.prototype = new Node();
+    IfStatement.prototype.constructor = IfStatement;
+    function IfStatement(pos, condition, trueBody, falseBody){
+        this.name = "IfStatement";
         this.pos = pos;
+        this.condition = condition;
+        this.trueBody = trueBody;
+        this.falseBody = falseBody;
     }
 
     // ---------------------------------------------------------------
@@ -145,7 +157,7 @@
     Block.prototype.constructor = Block;
     function Block(pos, statements){
         this.name = "Block";
-        this.statements = statements;
+        this.statements = statements || [];
         this.pos = pos;
     }
     
@@ -247,6 +259,13 @@
             }
         }
         return output;
+    }
+
+    function createNestedIfElifStatements(ifelifs, elseblock){
+        if(ifelifs.length == 0){return elseblock || new Block(new Pos(-1,-1));}
+        var ifobj = ifelifs.shift();
+        return new IfStatement(ifobj.pos, ifobj.condition, ifobj.body,
+            createNestedIfElifStatements(ifelifs, elseblock));
     }
 }
 
@@ -431,11 +450,26 @@ whileStatement = 'while' _nonchar_ _ cond:expression _ body:block
 /* for loop: The expression must be of type Iterable<T>. */
 forStatement = 'for' Identifier 'in' expression block
 
-ifStatement = 'if' cond:expression thenBlock:block
-    elif*
-    ('else' elseBlock:block)?
+ifStatement = 'if' _nonchar_ _ cond:expression _ thenBlock:block
+                elifs:elif* elseBlock:('else' _ eb:block { return eb; })?
+    {
+        var ifelifs = elifs;
+        ifelifs.unshift({
+                    condition: cond,
+                    body: thenBlock,
+                    pos: getCurrentPos()
+                });
+        return createNestedIfElifStatements(ifelifs, elseBlock);
+    }
 
-elif = 'elif' elifCondition:expression elifBlock:block
+elif = 'elif' _nonchar_ _ elifCondition:expression _ elifBlock:block
+        {
+            return {
+                    condition: elifCondition,
+                    body: elifBlock,
+                    pos: getCurrentPos()
+                };
+        }
 
 tryStatement = 'try' block
     ('handle' variableDeclaration? handleBlock:block)+
