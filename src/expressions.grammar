@@ -1,5 +1,10 @@
 
 {
+    function UnaryExpression(op, value){
+        this.op = op;
+        this.value = value;
+    }
+
     function BinaryExpression(left, op, right){
         this.left = left;
         this.op = op;
@@ -9,70 +14,79 @@
     function leftAssociative(lefts, right) {
         if (!lefts.length) return right;
         var last = lefts.pop();
-        return new BinaryExpression(leftAssociative(lefts, last[0]), last[1], right);
+        return new BinaryExpression(
+            leftAssociative(lefts, last[0]), last[1], right);
+    }
+
+    function rightAssociative(left, rights) {
+        if (!rights.length) return left;
+        var first = rights.shift();
+        return new BinaryExpression(
+            left, first[0], rightAssociative(first[1], rights));
     }
 }
 
 expression = asExpression
-nonBinaryExpression = literal
+nonBinaryExpression = literal 
+    / '(' exp:expression ')' { return exp; } / unaryExpression
+unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
+                    { return new UnaryExpression(op, exp); }
 
-literal = [0-9]
+literal = [a-z]+
 
-asExpression = lefts:(orExpression 'as')* right:orExpression
+asExpression = lefts:(exp:orExpression _ op:'as' _nonchar_ _ 
+                    { return [exp,op]; })*
+                right:orExpression
                 { return leftAssociative(lefts, right); }
 
-orExpression = lefts:(andExpression 'or')* right:andExpression
+orExpression = lefts:(exp:andExpression _ op:'or' _nonchar_ _ 
+                    { return [exp,op]; })*
+                right:andExpression
                 { return leftAssociative(lefts, right); }
 
-andExpression = lefts:(inExpression 'and')* right:inExpression
+andExpression = lefts:(exp:inExpression _ op:'and' _nonchar_ _ 
+                    { return [exp,op]; })*
+                right:inExpression
                 { return leftAssociative(lefts, right); }
 
-inExpression = lefts:(eqExpression 'in')* right:eqExpression
+inExpression = lefts:(exp:eqExpression _ op:'in' _nonchar_ _ 
+                    { return [exp,op]; })*
+                right:eqExpression
                 { return leftAssociative(lefts, right); }
 
-eqExpression = lefts:(cmpExpression ('=' / '!=' / 'is'))* right:cmpExpression
+eqExpression = lefts:(exp:cmpExpression _ 
+                op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} ) _ 
+                    { return [exp, op]; })* right:cmpExpression
                 { return leftAssociative(lefts, right); }
 
-cmpExpression = lefts:(addExpression ('<' / '>' / '<=' / '>='))*
+cmpExpression = lefts:(exp:addExpression _ op:('<' / '>' / '<=' / '>=') _
+                    { return [exp,op]; })*
                 right:addExpression
                 { return leftAssociative(lefts, right); }
 
-addExpression = lefts:(mulExpression ('+' / '-'))* right:mulExpression
+addExpression = lefts:(exp:mulExpression _ op:('+' / '-') _
+                    { return [exp,op]; })*
+                right:mulExpression
                 { return leftAssociative(lefts, right); }
 
-mulExpression = lefts:(powExpression ('*' / '/' / '%' ))* right:powExpression
+mulExpression = lefts:(exp:powExpression _ op:('*' / '/' / '%' ) _ 
+                    { return [exp,op]; })*
+                right:powExpression
                 { return leftAssociative(lefts, right); }
 
 /* power is right-associative */
-powExpression = left:nonBinaryExpression op:('^') right:powExpression
+powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
+                    { return [op, exp] })*
+                { return rightAssociative(left, rights); }
+/*powExpression = left:memberAccess op:('^') right:powExpression
                 { return new BinaryExpression(left, op, right)}
-            / nonBinaryExpression
+            / memberAccess*/
 
-/* unary minus and not */
-/*accessExpression '.' */
+memberAccess = lefts:(exp:nonBinaryExpression _ op:'.' _
+                    { return [exp,op]; })*
+                right:nonBinaryExpression
+                { return leftAssociative(lefts, right); }
 
-/* <assoc=right> (plusMinusOperator / notOperator) singleExpression=expression*/
 
-// unary minus 
-// logical not 
-// -----------
-// power ^
-// -----------
-// multiplication
-// division
-// modulo
-// -----------
-// addition
-// subtraction
-// -----------
-// < <= > >=
-// -----------
-// = != is
-// -----------
-// in
-// -----------
-// and
-// -----------
-// or
-// -----------
-// as
+_ = (' ' / '\t' )* { return null; }
+_nonchar_ = !([a-zA-Z]) { return null; }
