@@ -288,7 +288,7 @@ declWithAssignment = vardecl:(variableDeclaration / constantDeclaration)
                                     vardecl,
                                     new Assignment(getCurrentPos(),
                                         new VariableAccess(vardecl.pos,
-                                                        vardecl.name),
+                                                        vardecl.variableName),
                                         value)
                                     ];
                             }
@@ -336,15 +336,15 @@ abstractMethodDeclaration = 'abstract' ret:type? name:Identifier
 
 accessModifier = '#' / '+' / '-' / '~'
 
-variableDeclaration = type:type _ name:Identifier
+variableDeclaration = type:type _ varname:Identifier
                     {
                         return new VariableDeclaration(getCurrentPos(),
-                            name, type);
+                            varname, type);
                     }
-constantDeclaration = type:type _ name:ConstantIdentifier
+constantDeclaration = type:type _ varname:ConstantIdentifier
                     {
                         return new VariableDeclaration(getCurrentPos(),
-                            name, type, true);
+                            varname, type, true);
                     }
 
 type = ClassIdentifier
@@ -500,9 +500,9 @@ expressionList = head:expression tail:((',' _ expression _)*)
                 return list;
             }
 
-expression = primary
+expression = functionCall
             / functionExpression
-            / functionCall
+            / primary
             // cond:expression 'if' trueval:expression 'else' falseval:expression
             // left:expression accessOperator right:expression
             /*/ <assoc=right> (plusMinusOperator / notOperator) singleExpression=expression
