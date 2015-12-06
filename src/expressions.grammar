@@ -81,18 +81,23 @@ eqExpression = lefts:(exp:cmpExpression _
                     { return [exp, op]; })* right:cmpExpression
                 { return leftAssociative(lefts, right); }
 
-cmpExpression = lefts:(exp:addExpression _ op:('<' / '>' / '<=' / '>=') _
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+cmpExpression = lefts:(exp:addExpression _ 
+                op:(op:('<' / '>' / '<=' / '>=') 
+                    {return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:addExpression
                 { return leftAssociative(lefts, right); }
 
-addExpression = lefts:(exp:mulExpression _ op:('+' / '-') _
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+addExpression = lefts:(exp:mulExpression _ 
+                op:(op:('+' / '-') {return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:mulExpression
                 { return leftAssociative(lefts, right); }
 
-mulExpression = lefts:(exp:powExpression _ op:('*' / '/' / '%' ) _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+mulExpression = lefts:(exp:powExpression _ 
+                op:(op:('*' / '/' / '%' )
+                    { return { op:op, pos:getCurrentPos()}; }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:powExpression
                 { return leftAssociative(lefts, right); }
 
@@ -100,8 +105,9 @@ powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
                     { return {op, exp, pos:getCurrentPos()} })*
                 { return rightAssociative(left, rights); }
 
-memberAccess = lefts:(exp:nonBinaryExpression _ op:'.' _
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+memberAccess = lefts:(exp:nonBinaryExpression _ 
+                op:(op:'.' { return { op:op, pos:getCurrentPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:nonBinaryExpression
                 { return leftAssociative(lefts, right); }
 
