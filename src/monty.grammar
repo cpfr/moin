@@ -9,6 +9,7 @@
     }
 
     // ---------------------------------------------------------------
+    // ---------------------------------------------------------------
     
     function Node(pos, name){
         this.pos = pos;
@@ -17,11 +18,50 @@
         this.toString = function(){
             return this.name + " at " + this.pos.toString();
         }
+
+        this.isDeclaration = function(){return false;};
+        this.isStatement = function(){return false;};
+        this.isExpression = function(){return false;};
     }
 
     // ---------------------------------------------------------------
     
-    WhileLoop.prototype = new Node();
+    Declaration.prototype = new Node();
+    Declaration.prototype.constructor = Declaration;
+    function Declaration(pos, visibility){
+        this.pos = pos;
+        this.name = "Declaration";
+        this.visibility = visibility || "~";
+
+        this.isDeclaration = function(){return true;};
+    }
+
+    // ---------------------------------------------------------------
+    
+    Statement.prototype = new Node();
+    Statement.prototype.constructor = Statement;
+    function Statement(pos){
+        this.pos = pos;
+        this.name = "Statement";
+
+        this.isStatement = function(){return true;};
+    }
+
+    // ---------------------------------------------------------------
+    
+    Expression.prototype = new Node();
+    Expression.prototype.constructor = Expression;
+    function Expression(pos){
+        this.pos = pos;
+        this.name = "Expression";
+
+        this.isExpression = function(){return true;};
+    }
+
+    // ---------------------------------------------------------------
+    // ---------------------------------------------------------------
+    
+    WhileLoop.prototype = new Statement();
     WhileLoop.prototype.constructor = WhileLoop;
     function WhileLoop(pos, condition, body){
         this.name = "WhileLoop";
@@ -32,7 +72,7 @@
 
     // ---------------------------------------------------------------
     
-    IfStatement.prototype = new Node();
+    IfStatement.prototype = new Statement();
     IfStatement.prototype.constructor = IfStatement;
     function IfStatement(pos, condition, trueBody, falseBody){
         this.name = "IfStatement";
@@ -44,7 +84,7 @@
 
     // ---------------------------------------------------------------
     
-    Literal.prototype = new Node();
+    Literal.prototype = new Expression();
     Literal.prototype.constructor = Literal;
     function Literal(pos, value, type){
         this.name = "Literal";
@@ -59,7 +99,7 @@
 
     // ---------------------------------------------------------------
     
-    FunctionCall.prototype = new Node();
+    FunctionCall.prototype = new Expression();
     FunctionCall.prototype.constructor = FunctionCall;
     function FunctionCall(pos, functionName, parameters, type){
         this.name = "FunctionCall";
@@ -68,16 +108,9 @@
         this.parameters = parameters;
         this.type = type || null;
         /* FIXME: brauche ich type?*/
-    }
 
-    // ---------------------------------------------------------------
-
-    Declaration.prototype = new Node();
-    Declaration.prototype.constructor = Declaration;
-    function Declaration(pos, visibility){
-        this.name = "Declaration";
-        this.pos = pos;
-        this.visibility = visibility || "~";
+        /* function calls are also statements */
+        this.isStatement = function(){return true;};
     }
 
     // ---------------------------------------------------------------
@@ -94,7 +127,7 @@
 
     // ---------------------------------------------------------------
     
-    FunctionDeclaration.prototype = new Node();
+    FunctionDeclaration.prototype = new Declaration();
     FunctionDeclaration.prototype.constructor = FunctionDeclaration;
     function FunctionDeclaration(pos, funName, params, returnType, body){
         this.name = "FunctionDeclaration";
@@ -107,7 +140,7 @@
 
     // ---------------------------------------------------------------
     
-    ClassDeclaration.prototype = new Node();
+    ClassDeclaration.prototype = new Declaration();
     ClassDeclaration.prototype.constructor = ClassDeclaration;
     function ClassDeclaration(pos, clsName, superClasses, body, abstract){
         this.name = "ClassDeclaration";
@@ -120,7 +153,7 @@
 
     // ---------------------------------------------------------------
     
-    VariableAccess.prototype = new Node();
+    VariableAccess.prototype = new Expression();
     VariableAccess.prototype.constructor = VariableAccess;
     function VariableAccess(pos, varName){
         this.name = "VariableAccess";
@@ -130,7 +163,7 @@
 
     // ---------------------------------------------------------------
     
-    Assignment.prototype = new Node();
+    Assignment.prototype = new Statement();
     Assignment.prototype.constructor = Assignment;
     function Assignment(pos, left, right){
         this.name = "Assignment";
@@ -141,7 +174,7 @@
 
     // ---------------------------------------------------------------
     
-    CommandStatement.prototype = new Node();
+    CommandStatement.prototype = new Statement();
     CommandStatement.prototype.constructor = CommandStatement;
     function CommandStatement(pos, command, argument){
         this.name = "CommandStatement";
@@ -155,15 +188,39 @@
 
     Block.prototype = new Node();
     Block.prototype.constructor = Block;
-    function Block(pos, statements){
+    function Block(pos, contents){
         this.name = "Block";
-        this.statements = statements || [];
         this.pos = pos;
+        this.statements = [];
+        this.declarations = [];
+
+        var self = this;
+
+        this.addContents = function(contents){
+            for(var i = 0; i < contents.length; i++){
+                if(Array.isArray(contents[i])){
+                    self.addContents(contents[i]);
+                }
+                else{
+                    if(contents[i].isDeclaration()){
+                        self.declarations.push(contents[i]);
+                    }
+                    else if(contents[i].isStatement()){
+                        self.statements.push(contents[i]);
+                    }
+                    else{
+                        console.log("Error, invalid content: "+contents[i]);
+                    }
+                }
+            }
+        }
+        
+        self.addContents(contents);
     }
 
     // ---------------------------------------------------------------
     
-    UnaryExpression.prototype = new Node();
+    UnaryExpression.prototype = new Expression();
     UnaryExpression.prototype.constructor = UnaryExpression;
     function UnaryExpression(pos, op, value){
         this.name = "UnaryExpression";
@@ -172,7 +229,7 @@
         this.value = value;
     }
 
-    BinaryExpression.prototype = new Node();
+    BinaryExpression.prototype = new Expression();
     BinaryExpression.prototype.constructor = BinaryExpression;
     function BinaryExpression(pos, left, op, right){
         this.name = "BinaryExpression";
@@ -462,7 +519,7 @@ block = ':' EOL INDENT _ statements:(statement+ / 'pass' EOL) _ DEDENT
 
 statement = declaration
         / whileStatement
-        / forStatement
+        // forStatement
         / ifStatement
         // tryStatement
         // unpackAssignment
@@ -487,7 +544,7 @@ whileStatement = 'while' _nonchar_ _ cond:expression _ body:block
                 { return new WhileLoop(getCurrentPos(), cond, body); }
 
 /* for loop: The expression must be of type Iterable<T>. */
-forStatement = 'for' Identifier 'in' expression block
+/* forStatement = 'for' Identifier 'in' expression block */
 
 ifStatement = 'if' _nonchar_ _ cond:expression _ thenBlock:block
                 elifs:elif* elseBlock:('else' _ eb:block { return eb; })?
