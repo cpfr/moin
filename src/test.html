@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>Moin - Monty Interpreter Demo</title>
+        <meta charset="UTF-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width"/>
+        <meta name="author" content="Carsten Pfeffer"/>
+  </head>
+  <body>
+    <script type="application/javascript">
+        
+        var worker = new Worker('worker.js');
+        worker.addEventListener('message', function(e) {
+            console.log('Worker said: ', e.data);
+        }, false);
+        // worker.postMessage(); // Start the worker.
+
+
+    </script>
+  </body>
+</html>
