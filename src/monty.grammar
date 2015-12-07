@@ -467,7 +467,7 @@ statement = declaration
         // tryStatement
         // unpackAssignment
         / assignment
-        // compoundAssignment
+        / compoundAssignment
         / functionCallStm
         / stmWithEOL
         // caseStatement
@@ -520,9 +520,16 @@ assignment = left:expression _ ':=' _ right:expression EOL
 unpackList = unpackable (',' unpackable)+
 unpackable = expression / variableDeclaration */
 
-/*compoundAssignment = left:expression compoundSymbol right:expression EOL
-compoundSymbol = operator:('+=' / '-=' / '*=' / '/=' / '%=' / '^=')
-*/
+compoundAssignment = left:expression _ op:compoundSymbol '='
+                    _ right:expression EOL
+            {
+                var compound = new BinaryExpression(getCurrentPos(),
+                    left, op, right);
+                return new Assignment(getCurrentPos(), left, compound);
+            }
+
+compoundSymbol = '+' / '-' / '*' / '/' / '%' / '^'
+
 
 functionCall = funName:(type / Identifier)
                 Lparenthesis params:expressionList? Rparenthesis
@@ -594,19 +601,21 @@ cmpExpression = lefts:(exp:addExpression _
                 { return leftAssociative(lefts, right); }
 
 addExpression = lefts:(exp:mulExpression _ 
-                op:(op:('+' / '-') {return {op:op, pos:getCurrentPos()};}) _
+                op:(_nocompound_ op:('+' / '-')
+                    {return {op:op, pos:getCurrentPos()};}) _
                     { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:mulExpression
                 { return leftAssociative(lefts, right); }
 
 mulExpression = lefts:(exp:powExpression _ 
-                op:(op:('*' / '/' / '%' )
+                op:(_nocompound_ op:('*' / '/' / '%' )
                     { return { op:op, pos:getCurrentPos() }; }) _ 
                     { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:powExpression
                 { return leftAssociative(lefts, right); }
 
-powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
+powExpression = left:memberAccess rights:( _ _nocompound_ op:'^' _
+                    exp:memberAccess
                     { return {op:op, exp:exp, pos:getCurrentPos()} })*
                 { return rightAssociative(left, rights); }
 
@@ -815,3 +824,4 @@ Rcurly = _ '}' _ {nesting--;}
 _ = (' ' / '\t' )* { return null; }
 __ = (' ' / '\t' )+ { return null; }
 _nonchar_ = !([a-zA-Z]) { return null; }
+_nocompound_ = !(compoundSymbol '=')
