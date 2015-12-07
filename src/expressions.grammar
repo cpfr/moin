@@ -83,7 +83,7 @@ eqExpression = lefts:(exp:cmpExpression _
 
 cmpExpression = lefts:(exp:addExpression _ 
                 op:(op:('<' / '>' / '<=' / '>=') 
-                    {return {op:op, pos:getCurrentPos()};}) _
+                    { return {op:op, pos:getCurrentPos()}; }) _
                     { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:addExpression
                 { return leftAssociative(lefts, right); }
@@ -96,13 +96,13 @@ addExpression = lefts:(exp:mulExpression _
 
 mulExpression = lefts:(exp:powExpression _ 
                 op:(op:('*' / '/' / '%' )
-                    { return { op:op, pos:getCurrentPos()}; }) _ 
+                    { return { op:op, pos:getCurrentPos() }; }) _ 
                     { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:powExpression
                 { return leftAssociative(lefts, right); }
 
 powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
-                    { return {op, exp, pos:getCurrentPos()} })*
+                    { return {op:op, exp:exp, pos:getCurrentPos()} })*
                 { return rightAssociative(left, rights); }
 
 memberAccess = lefts:(exp:nonBinaryExpression _ 
