@@ -12,46 +12,120 @@
 
 <textarea id="grammar">
 {
-    var nesting = 0;
-    var indentationStack = [0];
-}
-start = line+ 
+    function Pos(line, column){
+        this.line = line;
+        this.column = column;
 
-line = [a-z]*  EOL
-
-EOL = LineBreak+
-        indentation:((' ' / '\t' )*)
-        {
-          if(nesting > 0)
-            {
-              return null;
-            }
-            var indentLevel = indentationStack[indentationStack.length - 1];
-            var tokens = ["EOF"];
-            if(indentLevel < indentation.length){
-                while(indentationStack[indentationStack.length - 1] > indentLevel)
-                {
-                    indentationStack.pop();
-                    tokens.push("DEDENT");
-                }
-                /* if the new indentation does not match any outer level,
-                   we have a problem: */
-                if(indentationStack[indentationStack.length - 1] != indentLevel)
-                {
-                    tokens.push("BADDENT");
-                }
-            }
-            else if(indentLevel > indentation.length){
-              indentationStack.push(indentation.length);
-                return ["EOL", "INDENT"];
-            }
-            
-            /*return offset;*/
-            
-          /*return "EOL";*/
+        this.toString = function(){
+            return "line "+this.line+", column "+this.column;
         }
+    }
 
-LineBreak = ('\t' / ' ' / ('//' (!'\n' .)*))* (('\u000C')?('\r')? '\n' )
+    // ---------------------------------------------------------------
+
+    function getCurrentPos(){
+        var loc = location();
+        return new Pos(loc.start.line, loc.start.column);
+    }
+
+    // ---------------------------------------------------------------
+    
+    function UnaryExpression(pos, op, value){
+        this.pos = pos;
+        this.op = op;
+        this.value = value;
+    }
+
+    function BinaryExpression(pos, left, op, right){
+        this.pos = pos;
+        this.left = left;
+        this.op = op;
+        this.right = right;
+    }
+
+    // ---------------------------------------------------------------
+
+    function leftAssociative(lefts, right) {
+        if (!lefts.length) return right;
+        var last = lefts.pop();
+        return new BinaryExpression(last.pos,
+            leftAssociative(lefts, last.exp), last.op, right);
+    }
+
+    function rightAssociative(left, rights) {
+        if (!rights.length) return left;
+        var first = rights.shift();
+        return new BinaryExpression(first.pos,
+            left, first.op, rightAssociative(first.exp, rights));
+    }
+}
+
+expression = asExpression
+nonBinaryExpression = literal 
+    / '(' exp:expression ')' { return exp; } / unaryExpression
+unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
+                    { return new UnaryExpression(op, exp); }
+
+literal = [a-z]+
+
+asExpression = lefts:(exp:orExpression _ op:'as' _nonchar_ _ 
+                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+                right:orExpression
+                { return leftAssociative(lefts, right); }
+
+orExpression = lefts:(exp:andExpression _ op:'or' _nonchar_ _ 
+                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+                right:andExpression
+                { return leftAssociative(lefts, right); }
+
+andExpression = lefts:(exp:inExpression _ op:'and' _nonchar_ _ 
+                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+                right:inExpression
+                { return leftAssociative(lefts, right); }
+
+inExpression = lefts:(exp:eqExpression _ op:'in' _nonchar_ _ 
+                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+                right:eqExpression
+                { return leftAssociative(lefts, right); }
+
+eqExpression = lefts:(exp:cmpExpression _ 
+                op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} ) _ 
+                    { return [exp, op]; })* right:cmpExpression
+                { return leftAssociative(lefts, right); }
+
+cmpExpression = lefts:(exp:addExpression _ 
+                op:(op:('<' / '>' / '<=' / '>=') 
+                    {return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:addExpression
+                { return leftAssociative(lefts, right); }
+
+addExpression = lefts:(exp:mulExpression _ 
+                op:(op:('+' / '-') {return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:mulExpression
+                { return leftAssociative(lefts, right); }
+
+mulExpression = lefts:(exp:powExpression _ 
+                op:(op:('*' / '/' / '%' )
+                    { return { op:op, pos:getCurrentPos()}; }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:powExpression
+                { return leftAssociative(lefts, right); }
+
+powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
+                    { return {op, exp, pos:getCurrentPos()} })*
+                { return rightAssociative(left, rights); }
+
+memberAccess = lefts:(exp:nonBinaryExpression _ 
+                op:(op:'.' { return { op:op, pos:getCurrentPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:nonBinaryExpression
+                { return leftAssociative(lefts, right); }
+
+
+_ = (' ' / '\t' )* { return null; }
+_nonchar_ = !([a-zA-Z]) { return null; }
 </textarea>
 
     <script type="application/javascript" src="peg-0.9.0.min.js"></script>

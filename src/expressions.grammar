@@ -56,29 +56,35 @@ unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
 
 literal = [a-z]+
 
-asExpression = lefts:(exp:orExpression _ op:'as' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+asExpression = lefts:(exp:orExpression _ 
+                op:(op:'as' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:orExpression
                 { return leftAssociative(lefts, right); }
 
-orExpression = lefts:(exp:andExpression _ op:'or' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+orExpression = lefts:(exp:andExpression _ 
+                op:(op:'or' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:andExpression
                 { return leftAssociative(lefts, right); }
 
-andExpression = lefts:(exp:inExpression _ op:'and' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+andExpression = lefts:(exp:inExpression _
+                op:(op:'and' _nonchar_ {return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:inExpression
                 { return leftAssociative(lefts, right); }
 
-inExpression = lefts:(exp:eqExpression _ op:'in' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
+inExpression = lefts:(exp:eqExpression _ 
+                op:(op:'in' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:eqExpression
                 { return leftAssociative(lefts, right); }
 
 eqExpression = lefts:(exp:cmpExpression _ 
-                op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} ) _ 
-                    { return [exp, op]; })* right:cmpExpression
+                op:(op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} )
+                    { return { op:op, pos:getCurrentPos()} }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:cmpExpression
                 { return leftAssociative(lefts, right); }
 
 cmpExpression = lefts:(exp:addExpression _ 
