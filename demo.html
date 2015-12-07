@@ -1,142 +1,152 @@
 <!-- http://pegjs.org/online -->
 <html>
   <head>
-    <title></title>
-    <meta content="">
-    <style></style>
+    <title>Moin - Monty Interpreter Demo</title>
+        <meta charset="UTF-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width"/>
+        <meta name="author" content="Carsten Pfeffer"/>
+        <style type="text/css">
+            @import url(https://fonts.googleapis.com/css?family=Cousine:400,700,400italic);
+            body, html {
+                background-color: #4B555F;
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Cousine', arial;
+            }
+            textarea {
+                background-color: white;
+                padding: 0.5em;
+                border: 10px solid #4B555F;
+                border-top: 50px solid #4B555F;
+                font-size: 13px;
+                width: 45%;
+                height: 99%;
+                box-sizing: border-box;
+                float: left;
+                resize: none;
+                font-family: 'Cousine', monospace;
+            }
+
+            #input{
+                background-color: #BBC5CF;
+                color: #0B151F;
+            }
+
+            #output{
+                font-weight: bold;
+                background-color: #0B151F;
+                color: #EBF5FF;
+            }
+
+            button::-moz-focus-inner {
+                border: 0;
+            }
+
+            .buttons{
+                width: 10%;
+                height: 99%;
+                border-top: 50px solid #4B555F;
+                border-bottom: 10px solid #4B555F;
+                box-sizing: border-box;
+                float: left;
+            }
+            .buttons button {
+                display: block;
+                width: 100%;
+                font-size: 1em;
+                font-weight: 400;
+                font-family: 'Cousine', arial;
+                border: none;
+                margin-bottom: 1em;
+                cursor: pointer;
+
+                background: #3498db;
+                background-image: linear-gradient(to bottom, #53a395, #488478);
+
+                border-radius: 0.5em;
+                color: #ffffff;
+                padding: 0.5em;
+            }
+
+            .buttons button:hover {
+                background: #3cb0fd;
+                background-image: linear-gradient(to bottom, #5ac2ad, #53a395);
+            }
+
+            #header{
+                position: fixed;
+                width: 100%;
+                height: 50px;
+                font-weight: bold;
+                color: #AbB5Bf;
+            }
+
+            #header_left, #header_right{
+                width: 45%;
+                height: 50px;
+                border: 10px solid #4B555F;
+                border-top: 20px solid #4B555F;
+                float: left;
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            #header_left{
+                margin-right:10%;
+            }
+            #separator{
+                width: 10%;
+                height: 50px;
+                float: left;
+                box-sizing: border-box;
+            }
+        </style>
   </head>
   <body>
-    <textarea id="input" style="width: 800px; height: 500px;"></textarea>
-    <button onclick="parse()">run</button>
-    <textarea id="output" style="width: 800px; height: 500px;"></textarea>
+    <div id="header">
+        <div id="header_left">
+            Monty Code
+        </div>
+        <div id="header_right">
+            Terminal Output
+        </div>
+    </div>
 
-<textarea id="grammar">
-{
-    function Pos(line, column){
-        this.line = line;
-        this.column = column;
+<a href="https://github.com/cpfr/moin" target="_blank"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
 
-        this.toString = function(){
-            return "line "+this.line+", column "+this.column;
-        }
-    }
+    <textarea id="input">Int x := 1
+while x < 10:
+    println(x)
+    x += 1
 
-    // ---------------------------------------------------------------
-
-    function getCurrentPos(){
-        var loc = location();
-        return new Pos(loc.start.line, loc.start.column);
-    }
-
-    // ---------------------------------------------------------------
-    
-    function UnaryExpression(pos, op, value){
-        this.pos = pos;
-        this.op = op;
-        this.value = value;
-    }
-
-    function BinaryExpression(pos, left, op, right){
-        this.pos = pos;
-        this.left = left;
-        this.op = op;
-        this.right = right;
-    }
-
-    // ---------------------------------------------------------------
-
-    function leftAssociative(lefts, right) {
-        if (!lefts.length) return right;
-        var last = lefts.pop();
-        return new BinaryExpression(last.pos,
-            leftAssociative(lefts, last.exp), last.op, right);
-    }
-
-    function rightAssociative(left, rights) {
-        if (!rights.length) return left;
-        var first = rights.shift();
-        return new BinaryExpression(first.pos,
-            left, first.op, rightAssociative(first.exp, rights));
-    }
-}
-
-expression = asExpression
-nonBinaryExpression = literal 
-    / '(' exp:expression ')' { return exp; } / unaryExpression
-unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
-                    { return new UnaryExpression(op, exp); }
-
-literal = [a-z]+
-
-asExpression = lefts:(exp:orExpression _ op:'as' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
-                right:orExpression
-                { return leftAssociative(lefts, right); }
-
-orExpression = lefts:(exp:andExpression _ op:'or' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
-                right:andExpression
-                { return leftAssociative(lefts, right); }
-
-andExpression = lefts:(exp:inExpression _ op:'and' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
-                right:inExpression
-                { return leftAssociative(lefts, right); }
-
-inExpression = lefts:(exp:eqExpression _ op:'in' _nonchar_ _ 
-                    { return {exp:exp, op:op, pos:getCurrentPos()}; })*
-                right:eqExpression
-                { return leftAssociative(lefts, right); }
-
-eqExpression = lefts:(exp:cmpExpression _ 
-                op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} ) _ 
-                    { return [exp, op]; })* right:cmpExpression
-                { return leftAssociative(lefts, right); }
-
-cmpExpression = lefts:(exp:addExpression _ 
-                op:(op:('<' / '>' / '<=' / '>=') 
-                    {return {op:op, pos:getCurrentPos()};}) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
-                right:addExpression
-                { return leftAssociative(lefts, right); }
-
-addExpression = lefts:(exp:mulExpression _ 
-                op:(op:('+' / '-') {return {op:op, pos:getCurrentPos()};}) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
-                right:mulExpression
-                { return leftAssociative(lefts, right); }
-
-mulExpression = lefts:(exp:powExpression _ 
-                op:(op:('*' / '/' / '%' )
-                    { return { op:op, pos:getCurrentPos()}; }) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
-                right:powExpression
-                { return leftAssociative(lefts, right); }
-
-powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
-                    { return {op, exp, pos:getCurrentPos()} })*
-                { return rightAssociative(left, rights); }
-
-memberAccess = lefts:(exp:nonBinaryExpression _ 
-                op:(op:'.' { return { op:op, pos:getCurrentPos()}; }) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
-                right:nonBinaryExpression
-                { return leftAssociative(lefts, right); }
-
-
-_ = (' ' / '\t' )* { return null; }
-_nonchar_ = !([a-zA-Z]) { return null; }
 </textarea>
+    <div class="buttons">
+        <button onclick="clearOutput()">clear</button>
+        <button onclick="parse()">run</button>
+    </div>
+    <textarea id="output" readonly="readonly"></textarea>
 
-    <script type="application/javascript" src="peg-0.9.0.min.js"></script>
+    <script type="application/javascript" src="src/interpreter.js"></script>
+    <script type="application/javascript" src="src/parser.js"></script>
     
     <script type="application/javascript">
-        var grammar = document.getElementById("grammar").value;
-        // var parser = PEG.buildParser(, {output : "source"});
-        var parser = PEG.buildParser(grammar, {output : "parser"});
-        
+        function print(msg){
+            var output = document.getElementById("output")
+            output.value += msg;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput(){
+            document.getElementById("output").value = "";
+        }
+       
         function parse(){
-            console.log(parser.parse(document.getElementById("input").value));
+            var codeInput = document.getElementById("input")
+            var ast = mtyParser.parse(codeInput.value+"\n");
+            var interpreter = new MtyInterpreter(ast, print);
+            interpreter.run();
         }
     </script>
   </body>

@@ -51,11 +51,18 @@
     
     Expression.prototype = new Node();
     Expression.prototype.constructor = Expression;
-    function Expression(pos){
+    function Expression(pos, value){
         this.pos = pos;
         this.name = "Expression";
+        this.value = value || undefined;
 
+        var self = this;
         this.isExpression = function(){return true;};
+        this.getValue = function(){ return self.value; }
+    }
+
+    this.createExpression = function (pos, value){
+        return new Expression(pos, value);
     }
 
     // ---------------------------------------------------------------
@@ -92,7 +99,7 @@
         this.value = value;
         this.type = type || null;
 
-        this.eval = function(){
+        this.getValue = function(){
             return this.value;
         }
     }
@@ -123,6 +130,11 @@
         this.variableName = varName;
         this.type = type;
         this.constant = constant || false;
+        this.value = undefined;
+
+        this.getValue = function(){
+            return this.value;
+        }
     }
 
     // ---------------------------------------------------------------
@@ -192,10 +204,12 @@
         this.name = "Block";
         this.pos = pos;
         this.statements = [];
-        this.declarations = [];
+
+        var _variableDeclarations = {};
+        var _functionDeclarations = {};
+        var _classDeclarations = {};
 
         var self = this;
-
         this.addContents = function(contents){
             for(var i = 0; i < contents.length; i++){
                 if(Array.isArray(contents[i])){
@@ -203,7 +217,16 @@
                 }
                 else{
                     if(contents[i].isDeclaration()){
-                        self.declarations.push(contents[i]);
+                        var decl = contents[i];
+                        if(decl.variableName !== undefined){
+                            _variableDeclarations[decl.variableName] = decl;
+                        }
+                        else if(decl.functionName !== undefined){
+                            _functionDeclarations[decl.functionName] = decl;
+                        }
+                        else if(decl.className !== undefined){
+                            _classDeclarations[decl.className] = decl;
+                        }
                     }
                     else if(contents[i].isStatement()){
                         self.statements.push(contents[i]);
@@ -214,8 +237,19 @@
                 }
             }
         }
-        
         self.addContents(contents);
+
+        this.resolveVariable = function(varname){
+            return _variableDeclarations[varname];
+        }
+
+        this.resolveFunction = function(funname){
+            return _functionDeclarations[funname];
+        }
+
+        this.resolveClass = function(clsname){
+            return _classDeclarations[clsname];
+        }
     }
 
     // ---------------------------------------------------------------
@@ -370,7 +404,8 @@
 // -------------------------------------------------------------------
 
 moduleDeclaration = /*importLine* */
-    (classDeclaration / statement)*
+    contents:(classDeclaration / statement)*
+    { return new Block(getCurrentPos(), contents); }
 
 declaration = independentDeclaration
             / classDeclaration

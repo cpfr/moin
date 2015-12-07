@@ -12,3 +12,5 @@ Missing language feature support:
 - list comprehensions
 - array, range and tuple literals
 - pattern matching (case)
+
+- imports
