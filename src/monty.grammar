@@ -160,13 +160,52 @@
         this.statements = statements || [];
         this.pos = pos;
     }
+
+    // ---------------------------------------------------------------
     
+    UnaryExpression.prototype = new Node();
+    UnaryExpression.prototype.constructor = UnaryExpression;
+    function UnaryExpression(pos, op, value){
+        this.name = "UnaryExpression";
+        this.pos = pos;
+        this.op = op;
+        this.value = value;
+    }
+
+    BinaryExpression.prototype = new Node();
+    BinaryExpression.prototype.constructor = BinaryExpression;
+    function BinaryExpression(pos, left, op, right){
+        this.name = "BinaryExpression";
+        this.pos = pos;
+        this.left = left;
+        this.op = op;
+        this.right = right;
+    }
+
     // ---------------------------------------------------------------
 
     function getCurrentPos(){
         var loc = location();
         return new Pos(loc.start.line, loc.start.column);
     }
+
+    // ---------------------------------------------------------------
+
+    function leftAssociative(lefts, right) {
+        if (!lefts.length) return right;
+        var last = lefts.pop();
+        return new BinaryExpression(last.pos,
+            leftAssociative(lefts, last.exp), last.op, right);
+    }
+
+    function rightAssociative(left, rights) {
+        if (!rights.length) return left;
+        var first = rights.shift();
+        return new BinaryExpression(first.pos,
+            left, first.op, rightAssociative(first.exp, rights));
+    }
+    
+    // ---------------------------------------------------------------
 
     // ---------------------------------------------------------------
     // -- Indentation & White-Spaces ---------------------------------
@@ -500,23 +539,82 @@ expressionList = head:expression tail:((',' _ expression _)*)
                 return list;
             }
 
-expression = functionCall
+/* this unusual structure is due to the operator precedence rules*/
+expression = binaryExpression
+binaryExpression = asExpression
+nonBinaryExpression = functionCall
             / functionExpression
+            / unaryExpression
             / primary
-            // cond:expression 'if' trueval:expression 'else' falseval:expression
-            // left:expression accessOperator right:expression
-            /*/ <assoc=right> (plusMinusOperator / notOperator) singleExpression=expression
-            / <assoc=right> left=expression powerOperator right=expression
-            / left=expression dotOperator right=expression
-            / left=expression plusMinusOperator right=expression
-            / left=expression compareOperator right=expression
-            / left=expression eqOperator right=expression
-            / left=expression inOperator right=expression
-            / left=expression andOperator right=expression
-            / left=expression orOperator right=expression
-            / expr=expression asOperator type
-            / expr=expression isOperator ClassIdentifier
-            / listComprehension*/
+
+            /*
+            / cond:expression 'if' trueval:expression 'else' falseval:expression
+            / listComprehension
+            */
+
+unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
+                    { return new UnaryExpression(op, exp); }
+
+asExpression = lefts:(exp:orExpression _ 
+                op:(op:'as' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:orExpression
+                { return leftAssociative(lefts, right); }
+
+orExpression = lefts:(exp:andExpression _ 
+                op:(op:'or' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:andExpression
+                { return leftAssociative(lefts, right); }
+
+andExpression = lefts:(exp:inExpression _
+                op:(op:'and' _nonchar_ {return {op:op, pos:getCurrentPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:inExpression
+                { return leftAssociative(lefts, right); }
+
+inExpression = lefts:(exp:eqExpression _ 
+                op:(op:'in' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:eqExpression
+                { return leftAssociative(lefts, right); }
+
+eqExpression = lefts:(exp:cmpExpression _ 
+                op:(op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} )
+                    { return { op:op, pos:getCurrentPos()} }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:cmpExpression
+                { return leftAssociative(lefts, right); }
+
+cmpExpression = lefts:(exp:addExpression _ 
+                op:(op:('<' / '>' / '<=' / '>=') 
+                    { return {op:op, pos:getCurrentPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:addExpression
+                { return leftAssociative(lefts, right); }
+
+addExpression = lefts:(exp:mulExpression _ 
+                op:(op:('+' / '-') {return {op:op, pos:getCurrentPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:mulExpression
+                { return leftAssociative(lefts, right); }
+
+mulExpression = lefts:(exp:powExpression _ 
+                op:(op:('*' / '/' / '%' )
+                    { return { op:op, pos:getCurrentPos() }; }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:powExpression
+                { return leftAssociative(lefts, right); }
+
+powExpression = left:memberAccess rights:( _ op:'^' _ exp:memberAccess
+                    { return {op:op, exp:exp, pos:getCurrentPos()} })*
+                { return rightAssociative(left, rights); }
+
+memberAccess = lefts:(exp:nonBinaryExpression _ 
+                op:(op:'.' { return { op:op, pos:getCurrentPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                right:nonBinaryExpression
+                { return leftAssociative(lefts, right); }
 
 functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->' expression
 
@@ -527,51 +625,6 @@ primary = Lparenthesis exp:expression Rparenthesis { return exp }
             { return new VariableAccess(getCurrentPos(), name); }
         / 'self' { return new SelfExpression(getCurrentPos()); }
         // 'parent(' parent:type ')'
-
-/*inOperator
-  : operator='in'
-  ;
-
-andOperator
-  : operator='and'
-  ;
-
-orOperator
-  : operator=('or' / 'xor')
-  ;
-
-asOperator
-  : operator='as'
-  ;
-
-isOperator
-  : operator='is'
-  ;
-
-eqOperator
-  : operator=('=' / '!=')
-  ;
-
-compareOperator
-  : operator=('<' / '>' / '>=' / '<=')
-  ;
-
-powerOperator
-  : operator='^'
-  ;
-
-plusMinusOperator
-  : operator=('+' / '-')
-  ;
-
-notOperator
-  : operator='not'
-  ;
-  */
-
-accessOperator = '.'
-
-/*dotOperator = operator=('*' / '/' / '%')*/
 
 literal = IntLiteral
         / FloatLiteral
