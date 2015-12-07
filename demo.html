@@ -14,6 +14,7 @@
                 padding: 0;
                 box-sizing: border-box;
                 font-family: 'Cousine', arial;
+                min-width: 700px;
             }
             textarea {
                 background-color: white;
@@ -27,6 +28,8 @@
                 float: left;
                 resize: none;
                 font-family: 'Cousine', monospace;
+                min-width: 300px;
+                min-height: 350px;
             }
 
             #input{
@@ -51,7 +54,32 @@
                 border-bottom: 10px solid #4B555F;
                 box-sizing: border-box;
                 float: left;
+                min-height: 350px;
+                text-align: center;
             }
+
+            @keyframes rotating {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .buttons img{
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 2em;
+                width: 100%;
+                max-width: 64px;
+                max-height: 64px;
+            }
+            
+            .buttons img.spinning{
+                animation: 2s linear 0s normal none infinite rotating;
+            }
+
             .buttons button {
                 display: block;
                 width: 100%;
@@ -125,6 +153,8 @@ while x < 10:
     <div class="buttons">
         <button onclick="clearOutput()">clear</button>
         <button onclick="parse()">run</button>
+
+        <img src="coconut.png" id="coconut"/>
     </div>
     <textarea id="output" readonly="readonly"></textarea>
 
@@ -143,10 +173,18 @@ while x < 10:
         }
        
         function parse(){
-            var codeInput = document.getElementById("input")
-            var ast = mtyParser.parse(codeInput.value+"\n");
-            var interpreter = new MtyInterpreter(ast, print);
-            interpreter.run();
+            var coconut = document.getElementById("coconut");
+            coconut.className += " spinning";
+
+            setTimeout(
+                function(){
+                    var codeInput = document.getElementById("input")
+                    var ast = mtyParser.parse(codeInput.value+"\n");
+                    var interpreter = new MtyInterpreter(ast, print);
+                    interpreter.run();
+
+                    coconut.className = coconut.className.replace(/\bspinning\b/,'');
+                }, 20);
         }
     </script>
   </body>

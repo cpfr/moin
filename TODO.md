@@ -14,3 +14,5 @@ Missing language feature support:
 - pattern matching (case)
 
 - imports
+
+- implement the interpreter as a web worker
