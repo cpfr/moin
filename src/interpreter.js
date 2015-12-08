@@ -22,6 +22,16 @@ function MtyInterpreter(ast, printfn, readfn){
         return result;
     }
 
+    var _resolveFunction = function(functionName){
+        var blockIndex = _blockStack.length-1;
+        var result = undefined;
+        // TODO: overload resolution
+        while((result == undefined)&&(blockIndex >= 0)){
+            result = _blockStack[blockIndex].resolveFunction(functionName);
+            blockIndex--;
+        }
+        return result;
+    }
 
     // -------------------------------------------------------------------------
     // -- evaluation action functions ------------------------------------------
@@ -47,13 +57,24 @@ function MtyInterpreter(ast, printfn, readfn){
     }
 
     _actions['FunctionCall'] = function(node) {
-        if(node.functionName == "print"){
-            var param = _eval(node.parameters[0]);
-            _printfn(param.getValue());
+        var result = _resolveFunction(node.functionName);
+        if(result == undefined){
+            switch(node.functionName){
+                case "print":
+                    var param = _eval(node.parameters[0]);
+                    _printfn(param.getValue());
+                    break;
+                case "println":
+                    var param = _eval(node.parameters[0]);
+                    _printfn(param.getValue() + "\n");
+                    break;
+                default:
+                    console.log("error, function '"+node.functionName
+                        +"' not found.");
+            }
         }
-        else if(node.functionName == "println"){
-            var param = _eval(node.parameters[0]);
-            _printfn(param.getValue() + "\n");
+        else{
+            console.log("function found: "+result);
         }
     }
 
@@ -98,7 +119,7 @@ function MtyInterpreter(ast, printfn, readfn){
 
         var stmts = node.statements;
         for(var i = 0; i < stmts.length; i++){
-            _actions[stmts[i].name](stmts[i]);
+            _eval(stmts[i]);
         }
 
         _blockStack.pop();
@@ -164,6 +185,6 @@ function MtyInterpreter(ast, printfn, readfn){
     // -------------------------------------------------------------------------
 
     this.run = function(){
-        _actions[ast.name](ast);
+        _eval(ast);
     }
 }
