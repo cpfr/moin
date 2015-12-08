@@ -12,6 +12,8 @@ attempt to implement the language.
 A live demo can be found [here](http://htmlpreview.github.io/?https://github.com/cpfr/moin/blob/master/demo.html)
 
 ### Usage
+
+#### With web workers
 When using **moin** on a web page, it is recommended to use web workers. 
 For **moin** to work properly, the four files ``moin.js``, ``parser.js``,
 ``interpreter.js`` and ``worker.js`` must be copied into your project folder. 
@@ -43,7 +45,7 @@ moin("println(55)", {
 });
 ```
 
-##### Options:
+**Options:**
 - ``done`` A function that is called when the execution of the code is done.
    It should not take any parameters and have no return value
 - ``print`` This function will be called when the *Monty* ``print`` or
@@ -56,6 +58,26 @@ moin("println(55)", {
    are located. If omitted, it is assumed that they reside in the same directoy
    as the HTML document.
 
+#### Without web workers
+Using **moin** without web workers should only be done if web workers are not
+available (e.g. if it is not executed inside a browser). Without web workers,
+only the two files ``parser.js`` and ``interpreter.js`` are required. Both have
+to be added to the HTML document. The following example shows how to first parse
+a program and then pass the abstract syntax tree (AST) to the interpreter.
+The interpreter constructor takes two additional optional parameters, a print
+function and a read function (see description above):
+
+```html
+<script type="application/javascript" src="src/parser.js"></script>
+<script type="application/javascript" src="src/interpreter.js"></script>
+
+<script type="application/javascript">
+    var myCode = "println(\"Hello World!\")";
+    var ast = mtyParser.parse(myCode+"\n");
+    var interpreter = new MtyInterpreter(ast, printfn, readfn);
+    interpreter.run();
+</script>
+```
 
 ### License
 The MIT license is a very permissive open source license. See the 

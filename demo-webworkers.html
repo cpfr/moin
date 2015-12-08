@@ -212,9 +212,7 @@ while x < 10:
     </div>
     <textarea id="output" readonly="readonly"></textarea>
 
-    <script type="application/javascript" src="src/parser.js"></script>
-    <script type="application/javascript" src="src/interpreter.js"></script>
-    
+    <script type="application/javascript" src="src/moin.js"></script>
     <script type="application/javascript">
         function print(msg){
             var output = document.getElementById("output")
@@ -230,15 +228,15 @@ while x < 10:
             var coconut = document.getElementById("coconut");
             coconut.className += " spinning";
 
-            setTimeout(
-                function(){
-                    var codeInput = document.getElementById("input")
-                    var ast = mtyParser.parse(codeInput.value+"\n");
-                    var interpreter = new MtyInterpreter(ast, print);
-                    interpreter.run();
-
-                    coconut.className = coconut.className.replace(/\bspinning\b/,'');
-                }, 20);
+            var codeInput = document.getElementById("input")
+            moin(codeInput.value, {
+                print      : print,
+                scriptpath : "src",
+                done       : function(){
+                    coconut.className = coconut.className
+                                        .replace(/\bspinning\b/,'');
+                }
+            });
         }
     </script>
   </body>

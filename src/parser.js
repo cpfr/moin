@@ -6585,6 +6585,7 @@ mtyParser = (function() {
             this.name = "Block";
             this.pos = pos;
             this.statements = [];
+            contents = contents || [];
 
             var _variableDeclarations = {};
             var _functionDeclarations = {};

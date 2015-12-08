@@ -53,8 +53,7 @@ function MtyInterpreter(ast, printfn, readfn){
         }
         else if(node.functionName == "println"){
             var param = _eval(node.parameters[0]);
-            _printfn(param.getValue());
-            _printfn("\n");
+            _printfn(param.getValue() + "\n");
         }
     }
 
@@ -98,7 +97,7 @@ function MtyInterpreter(ast, printfn, readfn){
         _blockStack.push(node);
 
         var stmts = node.statements;
-        for(i = 0; i < stmts.length; i++){
+        for(var i = 0; i < stmts.length; i++){
             _actions[stmts[i].name](stmts[i]);
         }
 
