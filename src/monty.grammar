@@ -307,7 +307,7 @@
     // -- Indentation & White-Spaces ---------------------------------
     // ---------------------------------------------------------------
     var nesting = 0;
-    var indentStack = [];
+    var indentStack = [0];
     var currentIndent = "";
 
     // ---------------------------------------------------------------
@@ -548,11 +548,15 @@ defaultParameterList = head:declWithAssignment
                 return list;
             }
 
-block = ':' EOL INDENT _ statements:(statement+ / 'pass' EOL) _ DEDENT
+block = ':' EOL INDENT _ firstStatement:(statement / 'pass' EOL)
+            statements:(SAMEDENT _ stm:statement {return stm;})* DEDENT
         {
             var body = []
-            if(statements[0] != "pass"){
-                body = statements;
+            if(firstStatement != "pass"){
+                body.push(firstStatement);
+            }
+            if(Array.isArray(statements)){
+                body = body.concat(statements);
             }
             return new Block(getCurrentPos, body);
         }
@@ -897,15 +901,24 @@ UppercaseLetter = [A-Z]
 
 // -- EOL INDENT DEDENT ----------------------------------
 
-EOL = _ ('\r\n' / '\r' / '\n')+ SAMEDENT? { return "EOL"; }
+EOL = _ ('\r\n' / '\r' / '\n')+ { return "EOL"; }
 
 SAMEDENT = i:[ \t]* &{ return i.join("") === currentIndent; }
+    {console.log("SAMEDENT at "+location().start.line+":"+location().start.column);}
 
 INDENT = &(i:[ \t]+ &{ return i.length > currentIndent.length; }
-      { indentStack.push(currentIndent); currentIndent = i.join(""); })
+      {
+        console.log("INDENT at "+location().start.line+":"+location().start.column);
+       indentStack.push(currentIndent); currentIndent = i.join(""); })
 
-DEDENT = !{ currentIndent = indentStack.pop(); }
-        {return (new Pos(location().end.line, location().end.column)).toString();}
+DEDENT = !{ 
+    console.log("DEDENT?? "+currentIndent.length +" - "+ indentStack.peek().length);
+    return currentIndent == indentStack.peek(); }
+        {
+            currentIndent = indentStack.pop();
+            console.log("DEDENT at "+location().start.line+":"+location().start.column);
+            console.log("DEDENT!! "+currentIndent.length +" - "+ indentStack.peek().length);
+            return "DEDENT"}
 
 // -- brackets --------------------------------------------
 
@@ -922,3 +935,11 @@ _ = (' ' / '\t' )* { return null; }
 __ = (' ' / '\t' )+ { return null; }
 _nonchar_ = !([a-zA-Z]) { return null; }
 _nocompound_ = !(compoundSymbol '=')
+
+
+if true:
+    foo()
+    if false:
+        bla()
+    plopp()
+fasel()
