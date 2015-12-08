@@ -7,15 +7,12 @@
         <meta name="author" content="Carsten Pfeffer"/>
   </head>
   <body>
+
+    <script type="application/javascript" src="moin.js"></script>
+    
     <script type="application/javascript">
-        
-        var worker = new Worker('worker.js');
-        worker.addEventListener('message', function(e) {
-            console.log('Worker said: ', e.data);
-        }, false);
-        // worker.postMessage(); // Start the worker.
-
-
+        moin("println(55)");
+        moin("println(6)");
     </script>
   </body>
 </html>
