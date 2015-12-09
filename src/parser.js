@@ -36,7 +36,7 @@ var mtyParser = (function() {
         peg$startRuleFunctions = { moduleDeclaration: peg$parsemoduleDeclaration },
         peg$startRuleFunction  = peg$parsemoduleDeclaration,
 
-        peg$c0 = function(contents) { return new Block(getCurrentPos(), contents); },
+        peg$c0 = function(contents) { return new Block(getCurrentPos(), contents, "module"); },
         peg$c1 = ":=",
         peg$c2 = { type: "literal", value: ":=", description: "\":=\"" },
         peg$c3 = function(vardecl, value) {
@@ -98,6 +98,7 @@ var mtyParser = (function() {
                         return list;
                     },
         peg$c32 = function(ret, name, params, body) {
+                        body.blockType = "function";
                         return new FunctionDeclaration(getCurrentPos(),
                                                         name, params, ret, body);
                     },
@@ -134,7 +135,8 @@ var mtyParser = (function() {
         peg$c51 = function(cmd) { return new CommandStatement(getCurrentPos(), cmd, null); },
         peg$c52 = "while",
         peg$c53 = { type: "literal", value: "while", description: "\"while\"" },
-        peg$c54 = function(cond, body) { return new WhileLoop(getCurrentPos(), cond, body); },
+        peg$c54 = function(cond, body) { body.blockType = "loop";
+                        return new WhileLoop(getCurrentPos(), cond, body); },
         peg$c55 = "if",
         peg$c56 = { type: "literal", value: "if", description: "\"if\"" },
         peg$c57 = "else",
@@ -354,7 +356,7 @@ var mtyParser = (function() {
                     if(Array.isArray(statements)){
                         body = body.concat(statements);
                     }
-                    return new Block(getCurrentPos, body);
+                    return new Block(getCurrentPos(), body);
                 },
         peg$c203 = " ",
         peg$c204 = { type: "literal", value: " ", description: "\" \"" },
@@ -5954,10 +5956,11 @@ var mtyParser = (function() {
 
         Block.prototype = new Node();
         Block.prototype.constructor = Block;
-        function Block(pos, contents){
+        function Block(pos, contents, blockType){
             this.name = "Block";
             this.pos = pos;
             this.statements = [];
+            this.blockType = blockType;
             contents = contents || [];
 
             var _variableDeclarations = {};

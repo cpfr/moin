@@ -4,6 +4,7 @@ function MtyInterpreter(ast, printfn, readfn){
     var _printfn = printfn || function(msg){ console.log(msg); };
     var _readfn = readfn || function(){ return prompt(); };
 
+    var _abortBlock = undefined;
     var _actions = {};
     var currentNode = undefined;
 
@@ -13,6 +14,17 @@ function MtyInterpreter(ast, printfn, readfn){
         return _actions[node.name](node, lvalue);
     };
     var _blockStack = [];
+
+    var _returnValue = undefined;
+    var _getReturnValue = function(){
+        var val = _returnValue; 
+        _returnValue = undefined;
+        return val;
+    }
+
+    var _setReturnValue = function(val){
+        _returnValue = val;
+    }
 
     var _resolveVariable = function(variableName, lvalue){
         var blockIndex = _blockStack.length-1;
@@ -42,6 +54,19 @@ function MtyInterpreter(ast, printfn, readfn){
     _actions['WhileLoop'] = function(node) {
         while(_eval(node.condition).getValue()){
             _eval(node.body);
+            if(_abortBlock != undefined){
+                if(_abortBlock.command == "skip"){
+                    _abortBlock = undefined;
+                    continue;
+                }
+                else if(_abortBlock.command == "break"){
+                    _abortBlock = undefined;
+                    break;
+                }
+                else if(_abortBlock.command == "return"){
+                    break;
+                }
+            }
         }
     }
 
@@ -77,6 +102,9 @@ function MtyInterpreter(ast, printfn, readfn){
         }
         else{
             console.log("function found: "+result);
+            _eval(result.body);
+            _abortBlock = undefined;
+            return _getReturnValue();
         }
     }
 
@@ -104,15 +132,44 @@ function MtyInterpreter(ast, printfn, readfn){
         // TODO: implement
         switch(node.command){
             case 'return':
+                if(node.argument){
+                    _setReturnValue(_eval(node.argument));
+                }
+                _abortBlock = node;
                 break;
             case 'yield':
                 break;
             case 'raise':
                 break;
             case 'skip': // node.argument always undefined
+                _abortBlock = node;
                 break;
             case 'break': // node.argument always undefined
+                _abortBlock = node;
                 break;
+        }
+    }
+
+    var _checkAbortBlock = function(node){
+        if((_abortBlock.command == "break")||(_abortBlock.command == "skip")){
+            if((node.blockType == "function")||(node.blockType == "module")){
+                throw {
+                    msg: "Invalid "+_abortBlock.command
+                        +" statement outside function at "+_abortBlock.pos,
+                    line  : _abortBlock.pos.line,
+                    column: _abortBlock.pos.column
+                } 
+            }
+        }
+        else if(_abortBlock.command == "return"){
+            if(node.blockType == "module"){
+                throw {
+                    msg: "Invalid return statement "
+                        +"outside function at "+node.pos,
+                    line  : node.pos.line,
+                    column: node.pos.column
+                } 
+            }
         }
     }
 
@@ -122,6 +179,10 @@ function MtyInterpreter(ast, printfn, readfn){
         var stmts = node.statements;
         for(var i = 0; i < stmts.length; i++){
             _eval(stmts[i]);
+            if(_abortBlock != undefined){
+                _checkAbortBlock(node);
+                break;
+            }
         }
 
         _blockStack.pop();

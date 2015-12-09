@@ -212,10 +212,11 @@
 
     Block.prototype = new Node();
     Block.prototype.constructor = Block;
-    function Block(pos, contents){
+    function Block(pos, contents, blockType){
         this.name = "Block";
         this.pos = pos;
         this.statements = [];
+        this.blockType = blockType;
         contents = contents || [];
 
         var _variableDeclarations = {};
@@ -420,7 +421,7 @@
 
 moduleDeclaration = /*importLine* */
     contents:(classDeclaration / statement)*
-    { return new Block(getCurrentPos(), contents); }
+    { return new Block(getCurrentPos(), contents, "module"); }
 
 declaration = independentDeclaration
             / classDeclaration
@@ -514,6 +515,7 @@ functionDeclaration = ret:(type?) _ name:Identifier
             Lparenthesis params:parameterList? Rparenthesis
             body:block
             {
+                body.blockType = "function";
                 return new FunctionDeclaration(getCurrentPos(),
                                                 name, params, ret, body);
             }
@@ -583,7 +585,8 @@ commandStm = (cmd:('return' / 'yield' / 'raise') _nonchar_ _ exp:expression?
 
 /* while loop: The expression must be a condition (i.e. Boolean expression). */
 whileStatement = 'while' _nonchar_ _ cond:expression _ body:block
-                { return new WhileLoop(getCurrentPos(), cond, body); }
+                { body.blockType = "loop";
+                return new WhileLoop(getCurrentPos(), cond, body); }
 
 /* for loop: The expression must be of type Iterable<T>. */
 /* forStatement = 'for' Identifier 'in' expression block */
@@ -963,7 +966,7 @@ block = ':' EOL INDENT
             if(Array.isArray(statements)){
                 body = body.concat(statements);
             }
-            return new Block(getCurrentPos, body);
+            return new Block(getCurrentPos(), body);
         }
 
 // -- white spaces --------------------------------------------

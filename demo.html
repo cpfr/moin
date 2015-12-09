@@ -239,11 +239,14 @@ while x < 10:
                         interpreter.run();
                     }catch(err){
                         if(err.location !== undefined){
-                            console.log("ERROR at line "+err.location.start.line+
+                            alert("ERROR at line "+err.location.start.line+
                                 ":"+err.location.start.column+" >> "+err);
                         }
+                        else if(err.msg !== undefined){
+                            alert(err.msg);
+                        }
                         else{
-                            console.log(err);
+                            alert(err);
                         }
                     }
                     coconut.className = coconut.className.replace(/\bspinning\b/,'');
