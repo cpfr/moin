@@ -5,9 +5,11 @@ function MtyInterpreter(ast, printfn, readfn){
     var _readfn = readfn || function(){ return prompt(); };
 
     var _actions = {};
+    var currentNode = undefined;
 
     var _eval = function(node, lvalue){
         lvalue = lvalue || false;
+        currentNode = node;
         return _actions[node.name](node, lvalue);
     };
     var _blockStack = [];

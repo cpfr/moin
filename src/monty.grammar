@@ -3,6 +3,14 @@
         return this[this.length-1];
     }
 
+    function logPos(){
+        var loc = location();
+        console.log(loc.start.line+":"+
+                    loc.start.column+" - "+
+                    loc.end.line+":"+
+                    loc.end.column);
+    }
+
     function Pos(line, column){
         this.line = line;
         this.column = column;
@@ -552,6 +560,7 @@ defaultParameterList = head:declWithAssignment
             }
 
 statement = declaration
+        / functionCallStm
         / whileStatement
         // forStatement
         / ifStatement
@@ -907,12 +916,15 @@ LINE = (!CRLF .)* EOL
 
 
 /* EOL only matches if we are not inside parenthesis */
-EOL = _ &{return nesting == 0;} CRLF /* eat at least one EOL */
+/* &{return nesting == 0;} */
+EOL = _  CRLF /* eat at least one EOL */
     /* eat as many empty lines and comment lines as possible */
     EmptyLineOrComment*
     /* eat a number of WS and check against the current indentation level */
     indent:([ \t]*)
     {
+        logPos();
+        console.log("nesting: "+nesting);
         var newIndent = indent.join("");
         if(newIndent != indentStack.peek()){
             if(newIndent.length > indentStack.peek().length){
@@ -943,18 +955,13 @@ CRLF = ('\r\n' / '\r' / '\n')
 /*EOL = _ ('\r\n' / '\r' / '\n')+ { return "EOL"; }*/
 
 SAMEDENT = !{ return (nextIsIndent || (dedentCount > 0));}
-    {log("SAMEDENT at "+location().start.line+":"+location().start.column);
-    return "SAMEDENT";}
+    {return "SAMEDENT";}
 
 INDENT = &{ return nextIsIndent; }
-      { nextIsIndent = false;
-        log("INDENT at "+location().start.line+":"+location().start.column); 
-        return "INDENT";}
+      { nextIsIndent = false; return "INDENT";}
 
 DEDENT = &{ return (dedentCount > 0); }
-        { dedentCount--;
-            log("DEDENT at "+location().start.line+":"+location().start.column);
-            return "DEDENT"; }
+        { dedentCount--; return "DEDENT"; }
 
 // -- brackets --------------------------------------------
 
@@ -968,11 +975,11 @@ Rcurly = _ '}' _ {nesting--;}
 // ------- spaces --------------------------------------------
 
 block = ':' EOL INDENT
-            firstStatement:(statement / 'pass' EOL)
-            statements:(SAMEDENT _ stm:statement {return stm;})* DEDENT
+            firstStatement:(statement / 'pass' EOL {return null;})
+            statements:(SAMEDENT _ stmt:statement {return stmt;})* DEDENT
         {
             var body = []
-            if(firstStatement != "pass"){
+            if(firstStatement != null){
                 body.push(firstStatement);
             }
             if(Array.isArray(statements)){
