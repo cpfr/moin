@@ -238,8 +238,13 @@ while x < 10:
                         var interpreter = new MtyInterpreter(ast, print);
                         interpreter.run();
                     }catch(err){
-                        console.log("ERROR at line "+err.location.start.line+
-                            ":"+err.location.start.column+" >> "+err);
+                        if(err.location !== undefined){
+                            console.log("ERROR at line "+err.location.start.line+
+                                ":"+err.location.start.column+" >> "+err);
+                        }
+                        else{
+                            console.log(err);
+                        }
                     }
                     coconut.className = coconut.className.replace(/\bspinning\b/,'');
                 }, 20);

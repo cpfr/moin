@@ -3,12 +3,12 @@
         return this[this.length-1];
     }
 
-    function logPos(){
+    function strPos(){
         var loc = location();
-        console.log(loc.start.line+":"+
+        return loc.start.line+":"+
                     loc.start.column+" - "+
                     loc.end.line+":"+
-                    loc.end.column);
+                    loc.end.column;
     }
 
     function Pos(line, column){
@@ -314,7 +314,6 @@
     // ---------------------------------------------------------------
     // -- Indentation & White-Spaces ---------------------------------
     // ---------------------------------------------------------------
-    var nesting = 0;
     var indentStack = [""];
     var nextIsIndent = false;
     var dedentCount = 0;
@@ -900,37 +899,17 @@ UppercaseLetter = [A-Z]
 
 // -- EOL INDENT DEDENT ----------------------------------
 
-/*
-_begin = LINE*
-
-LINE = (!CRLF .)* EOL
-*/
-/* TODO: Das hier muss oben stehen:
-{
-    var nesting = 0;
-    var indentStack = [0];
-    var currentIndent = "";
-    var nextIsIndent = false;
-    var dedentCount = 0;
-}*/
-
-
-/* EOL only matches if we are not inside parenthesis */
-/* &{return nesting == 0;} */
 EOL = _  CRLF /* eat at least one EOL */
     /* eat as many empty lines and comment lines as possible */
     EmptyLineOrComment*
     /* eat a number of WS and check against the current indentation level */
     indent:([ \t]*)
     {
-        logPos();
-        console.log("nesting: "+nesting);
         var newIndent = indent.join("");
         if(newIndent != indentStack.peek()){
             if(newIndent.length > indentStack.peek().length){
                 nextIsIndent = true;
                 indentStack.push(newIndent);
-                //console.log("indent at line "+location().end.line);
             }
             else{
                 var dedents = 0;
@@ -942,7 +921,6 @@ EOL = _  CRLF /* eat at least one EOL */
                     indentStack.pop()
                     dedents++;
                 }
-                //console.log(dedents+" dedent(s) at line "+location().end.line);
                 dedentCount = dedents;
             }
         }
@@ -965,12 +943,12 @@ DEDENT = &{ return (dedentCount > 0); }
 
 // -- brackets --------------------------------------------
 
-Lparenthesis = _ '(' _ {nesting++;}
-Rparenthesis = _ ')' _ {nesting--;}
-Lbracket = _ '[' _ {nesting++;}
-Rbracket = _  ']'_  {nesting--;}
-Lcurly = _ '{' _ {nesting++;}
-Rcurly = _ '}' _ {nesting--;}
+Lparenthesis = _ '(' _ {return null;}
+Rparenthesis = _ ')' _ {return null;}
+Lbracket = _ '[' _ {return null;}
+Rbracket = _  ']'_  {return null;}
+Lcurly = _ '{' _ {return null;}
+Rcurly = _ '}' _ {return null;}
 
 // ------- spaces --------------------------------------------
 
@@ -992,6 +970,7 @@ block = ':' EOL INDENT
 
 _ = (' ' / '\t' )* { return null; }
 __ = (' ' / '\t' )+ { return null; }
+_n = (' ' / '\t' / '\r' / '\n')* { return null; }
 _nonchar_ = !([a-zA-Z]) { return null; }
 _nocompound_ = !(compoundSymbol '=')
 
