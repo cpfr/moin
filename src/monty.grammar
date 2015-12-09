@@ -307,8 +307,9 @@
     // -- Indentation & White-Spaces ---------------------------------
     // ---------------------------------------------------------------
     var nesting = 0;
-    var indentStack = [0];
-    var currentIndent = "";
+    var indentStack = [""];
+    var nextIsIndent = false;
+    var dedentCount = 0;
 
     // ---------------------------------------------------------------
     // -- Integer Literals -------------------------------------------
@@ -407,6 +408,8 @@
 // -------------------------------------------------------------------
 // -- The Grammar ----------------------------------------------------
 // -------------------------------------------------------------------
+
+/*start = _begin*/
 
 moduleDeclaration = /*importLine* */
     contents:(classDeclaration / statement)*
@@ -547,19 +550,6 @@ defaultParameterList = head:declWithAssignment
                 }
                 return list;
             }
-
-block = ':' EOL INDENT _ firstStatement:(statement / 'pass' EOL)
-            statements:(SAMEDENT _ stm:statement {return stm;})* DEDENT
-        {
-            var body = []
-            if(firstStatement != "pass"){
-                body.push(firstStatement);
-            }
-            if(Array.isArray(statements)){
-                body = body.concat(statements);
-            }
-            return new Block(getCurrentPos, body);
-        }
 
 statement = declaration
         / whileStatement
@@ -901,24 +891,70 @@ UppercaseLetter = [A-Z]
 
 // -- EOL INDENT DEDENT ----------------------------------
 
-EOL = _ ('\r\n' / '\r' / '\n')+ { return "EOL"; }
+/*
+_begin = LINE*
 
-SAMEDENT = i:[ \t]* &{ return i.join("") === currentIndent; }
-    {console.log("SAMEDENT at "+location().start.line+":"+location().start.column);}
+LINE = (!CRLF .)* EOL
+*/
+/* TODO: Das hier muss oben stehen:
+{
+    var nesting = 0;
+    var indentStack = [0];
+    var currentIndent = "";
+    var nextIsIndent = false;
+    var dedentCount = 0;
+}*/
 
-INDENT = &(i:[ \t]+ &{ return i.length > currentIndent.length; }
-      {
-        console.log("INDENT at "+location().start.line+":"+location().start.column);
-       indentStack.push(currentIndent); currentIndent = i.join(""); })
 
-DEDENT = !{ 
-    console.log("DEDENT?? "+currentIndent.length +" - "+ indentStack.peek().length);
-    return currentIndent == indentStack.peek(); }
-        {
-            currentIndent = indentStack.pop();
-            console.log("DEDENT at "+location().start.line+":"+location().start.column);
-            console.log("DEDENT!! "+currentIndent.length +" - "+ indentStack.peek().length);
-            return "DEDENT"}
+/* EOL only matches if we are not inside parenthesis */
+EOL = _ &{return nesting == 0;} CRLF /* eat at least one EOL */
+    /* eat as many empty lines and comment lines as possible */
+    EmptyLineOrComment*
+    /* eat a number of WS and check against the current indentation level */
+    indent:([ \t]*)
+    {
+        var newIndent = indent.join("");
+        if(newIndent != indentStack.peek()){
+            if(newIndent.length > indentStack.peek().length){
+                nextIsIndent = true;
+                indentStack.push(newIndent);
+                //console.log("indent at line "+location().end.line);
+            }
+            else{
+                var dedents = 0;
+                while(newIndent != indentStack.peek()){
+                    if(indentStack.length == 0){
+                        throw new SyntaxError("invalid indentation in line "
+                            +location().end.line);
+                    }
+                    indentStack.pop()
+                    dedents++;
+                }
+                //console.log(dedents+" dedent(s) at line "+location().end.line);
+                dedentCount = dedents;
+            }
+        }
+    }
+
+
+EmptyLineOrComment =  _ ('//' (!CRLF .)*)? CRLF
+CRLF = ('\r\n' / '\r' / '\n')
+
+/*EOL = _ ('\r\n' / '\r' / '\n')+ { return "EOL"; }*/
+
+SAMEDENT = !{ return (nextIsIndent || (dedentCount > 0));}
+    {log("SAMEDENT at "+location().start.line+":"+location().start.column);
+    return "SAMEDENT";}
+
+INDENT = &{ return nextIsIndent; }
+      { nextIsIndent = false;
+        log("INDENT at "+location().start.line+":"+location().start.column); 
+        return "INDENT";}
+
+DEDENT = &{ return (dedentCount > 0); }
+        { dedentCount--;
+            log("DEDENT at "+location().start.line+":"+location().start.column);
+            return "DEDENT"; }
 
 // -- brackets --------------------------------------------
 
@@ -929,6 +965,22 @@ Rbracket = _  ']'_  {nesting--;}
 Lcurly = _ '{' _ {nesting++;}
 Rcurly = _ '}' _ {nesting--;}
 
+// ------- spaces --------------------------------------------
+
+block = ':' EOL INDENT
+            firstStatement:(statement / 'pass' EOL)
+            statements:(SAMEDENT _ stm:statement {return stm;})* DEDENT
+        {
+            var body = []
+            if(firstStatement != "pass"){
+                body.push(firstStatement);
+            }
+            if(Array.isArray(statements)){
+                body = body.concat(statements);
+            }
+            return new Block(getCurrentPos, body);
+        }
+
 // -- white spaces --------------------------------------------
 
 _ = (' ' / '\t' )* { return null; }
@@ -937,9 +989,9 @@ _nonchar_ = !([a-zA-Z]) { return null; }
 _nocompound_ = !(compoundSymbol '=')
 
 
-if true:
-    foo()
-    if false:
-        bla()
-    plopp()
-fasel()
+//if true:
+//    foo()
+//    if false:
+//        bla()
+//    plopp()
+//fasel()
