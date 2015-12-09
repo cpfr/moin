@@ -573,7 +573,7 @@ statement = declaration
 
 functionCallStm = call:functionCall EOL { return call; }
 
-stmWithEOL = commandStm EOL
+stmWithEOL = stm:commandStm EOL {return stm;}
             / left:expression operator:'.' right:functionCall EOL
 
 commandStm = (cmd:('return' / 'yield' / 'raise') _nonchar_ _ exp:expression?
@@ -957,7 +957,7 @@ block = ':' EOL INDENT
             statements:(SAMEDENT _ stmt:statement {return stmt;})* DEDENT
         {
             var body = []
-            if(firstStatement != null){
+            if(firstStatement){
                 body.push(firstStatement);
             }
             if(Array.isArray(statements)){
