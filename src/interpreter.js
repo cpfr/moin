@@ -92,11 +92,11 @@ function MtyInterpreter(ast, printfn, readfn){
             switch(node.functionName){
                 case "print":
                     var param = _eval(node.parameters[0]);
-                    _printfn(param.getValue());
+                    _printfn(""+param.getValue());
                     break;
                 case "println":
                     var param = _eval(node.parameters[0]);
-                    _printfn(param.getValue() + "\n");
+                    _printfn(""+param.getValue() + "\n");
                     break;
                 default:
                     console.log("error, function '"+node.functionName
