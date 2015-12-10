@@ -33,6 +33,9 @@ function MtyInterpreter(ast, printfn, readfn){
             result = _blockStack[blockIndex].resolveVariable(variableName);
             blockIndex--;
         }
+        if(result == undefined){
+            throw { toString: function(){return "Variable '"+variableName+"' could not be resolved at "+currentNode.pos;} }
+        }
         return result;
     }
 
@@ -84,8 +87,8 @@ function MtyInterpreter(ast, printfn, readfn){
     }
 
     _actions['FunctionCall'] = function(node) {
-        var result = _resolveFunction(node.functionName);
-        if(result == undefined){
+        var funDecl = _resolveFunction(node.functionName);
+        if(funDecl == undefined){
             switch(node.functionName){
                 case "print":
                     var param = _eval(node.parameters[0]);
@@ -101,8 +104,41 @@ function MtyInterpreter(ast, printfn, readfn){
             }
         }
         else{
-            console.log("function found: "+result);
-            _eval(result.body);
+            console.log("function found: "+funDecl);
+
+            var contents = [];
+            var argc = node.parameters.length;
+            var parc = funDecl.parameters.length;
+
+            for(var i=0; i < parc; i++){
+                if(i < argc){
+                    var param = funDecl.parameters[i];
+                    if(Array.isArray(param)){ param = param[0]; }
+                    var arg = node.parameters[i];
+                    var varaccess = mtyParser.createVariableAccess(arg.pos,
+                                                        param.variableName);
+                    contents.push(param);
+                    contents.push(mtyParser.createAssignment(arg.pos,
+                                                            varaccess, arg));
+                }
+                else{
+                    var param = funDecl.parameters[i][0];
+                    var assign = funDecl.parameters[i][1];
+                    contents.push(param);
+                    contents.push(assign);
+                }
+            }
+            var paramBlock = mtyParser.createBlock(funDecl.pos,
+                                                    contents, "parameters");
+
+            _eval(paramBlock);
+            // the param block is a parent block of the function body block
+            // this way, the parameter declarations are visible within the
+            // function body
+            _blockStack.push(paramBlock);
+            _eval(funDecl.body);
+            _blockStack.pop();
+
             _abortBlock = undefined;
             return _getReturnValue();
         }
@@ -248,6 +284,20 @@ function MtyInterpreter(ast, printfn, readfn){
     // -------------------------------------------------------------------------
 
     this.run = function(){
-        _eval(ast);
+        try{
+            _eval(ast);
+        }
+        catch(err){
+            console.log(err);
+            throw {
+                error : err,
+                line : currentNode.pos.line,
+                column : currentNode.pos.column,
+                node : currentNode,
+                toString : function(){
+                    return "ERROR: "+err+" @ "+currentNode;
+                }
+            };
+        }
     }
 }

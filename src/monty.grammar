@@ -185,6 +185,10 @@
         this.variableName = varName;
     }
 
+    this.createVariableAccess = function(pos, varName){
+        return new VariableAccess(pos, varName);
+    }
+
     // ---------------------------------------------------------------
     
     Assignment.prototype = new Statement();
@@ -194,6 +198,10 @@
         this.pos = pos;
         this.left = left;
         this.right = right;
+    }
+
+    this.createAssignment = function(pos, left, right){
+        return new Assignment(pos, left, right);
     }
 
     // ---------------------------------------------------------------
@@ -264,6 +272,10 @@
         this.resolveClass = function(clsname){
             return _classDeclarations[clsname];
         }
+    }
+
+    this.createBlock = function(pos, contents, blockType){
+        return new Block(pos, contents, blockType);
     }
 
     // ---------------------------------------------------------------
@@ -639,11 +651,11 @@ functionCall = funName:(type / Identifier)
                     params = params || [];
                     return new FunctionCall(getCurrentPos(), funName, params);
                 }
-expressionList = head:expression tail:((',' _ expression _)*)
+expressionList = head:expression tail:((',' _ exp:expression _ {return exp;})*)
             {
                 var list = [head];
                 for(var i=0; i < tail.length; i++){
-                    list.push(tail[i][1]);
+                    list.push(tail[i]);
                 }
                 return list;
             }
