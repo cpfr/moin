@@ -708,7 +708,7 @@ eqExpression = lefts:(exp:cmpExpression _
                 { return leftAssociative(lefts, right); }
 
 cmpExpression = lefts:(exp:addExpression _ 
-                op:(op:('<' / '>' / '<=' / '>=') 
+                op:(op:('<=' / '>=' / '<' / '>') 
                     { return {op:op, pos:getCurrentPos()}; }) _
                     { return {exp:exp, op:op.op, pos:op.pos}; })*
                 right:addExpression
