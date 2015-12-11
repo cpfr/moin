@@ -1,3 +1,26 @@
+// maybe add a kind of stack trace next time
+function ContextError(pos, node, msg){
+    this.pos = pos;
+    this.node = node;
+    this.msg = msg;
+
+    this.toString = function(){
+        return this.msg+" "+this.node;
+    }
+}
+
+function InternalError(pos, node, msg, jspos, filename){
+    this.pos = pos;
+    this.node = node;
+    this.msg = msg;
+    this.jspos = jspos;
+    this.filename = filename
+
+    this.toString = function(){
+        return this.msg+" at "+this.jspos+" while evaluating "+this.node;
+    }
+}
+
 function MtyInterpreter(ast, printfn, readfn){
     this.ast = ast;
 
@@ -34,7 +57,9 @@ function MtyInterpreter(ast, printfn, readfn){
             blockIndex--;
         }
         if(result == undefined){
-            throw { toString: function(){return "Variable '"+variableName+"' could not be resolved at "+currentNode.pos;} }
+            throw new ContextError(currentNode.pos, currentNode,
+                        "The variable '"+currentNode.variableName
+                        +"' could not be resolved.");
         }
         return result;
     }
@@ -99,13 +124,12 @@ function MtyInterpreter(ast, printfn, readfn){
                     _printfn(""+param.getValue() + "\n");
                     break;
                 default:
-                    console.log("error, function '"+node.functionName
-                        +"' not found.");
+                    throw new ContextError(node.pos, node,
+                        "The function '"+node.functionName
+                        +"' could not be resolved.");
             }
         }
         else{
-            console.log("function found: "+funDecl);
-
             var contents = [];
             var argc = node.parameters.length;
             var parc = funDecl.parameters.length;
@@ -189,22 +213,16 @@ function MtyInterpreter(ast, printfn, readfn){
     var _checkAbortBlock = function(node){
         if((_abortBlock.command == "break")||(_abortBlock.command == "skip")){
             if((node.blockType == "function")||(node.blockType == "module")){
-                throw {
-                    msg: "Invalid "+_abortBlock.command
-                        +" statement outside function at "+_abortBlock.pos,
-                    line  : _abortBlock.pos.line,
-                    column: _abortBlock.pos.column
-                } 
+                throw new ContextError(node.pos, node,
+                        "Invalid "+_abortBlock.command
+                        +" statement outside loop.");
             }
         }
         else if(_abortBlock.command == "return"){
             if(node.blockType == "module"){
-                throw {
-                    msg: "Invalid return statement "
-                        +"outside function at "+node.pos,
-                    line  : node.pos.line,
-                    column: node.pos.column
-                } 
+                throw new ContextError(node.pos, node,
+                        "Invalid return statement outside function.");
+               
             }
         }
     }
@@ -288,16 +306,22 @@ function MtyInterpreter(ast, printfn, readfn){
             _eval(ast);
         }
         catch(err){
-            console.log(err);
-            throw {
-                error : err,
-                line : currentNode.pos.line,
-                column : currentNode.pos.column,
-                node : currentNode,
-                toString : function(){
-                    return "ERROR: "+err+" @ "+currentNode;
+            if(err instanceof ContextError){
+                throw err;
+            }
+            else{
+                if(currentNode == undefined){
+                    currentNode = {
+                        name : "",
+                        pos : mtyParser.createPos(-1,-1)
+                    }
                 }
-            };
+                throw new InternalError(currentNode.pos, currentNode,
+                                        err.message,
+                                        mtyParser.createPos(err.lineNumber,
+                                                            err.columnNumber),
+                                        err.fileName);
+            }
         }
     }
 }

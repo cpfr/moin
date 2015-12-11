@@ -245,16 +245,17 @@ while i < 10:
                         var interpreter = new MtyInterpreter(ast, print);
                         interpreter.run();
                     }catch(err){
-                        if(err.location !== undefined){
-                            alert("ERROR at line "+err.location.start.line+
-                                ":"+err.location.start.column+" >> "+err);
-                        }
-                        else if(err.msg !== undefined){
-                            alert(err.msg);
-                        }
-                        else{
-                            alert(err);
-                        }
+                        // if(err.location !== undefined){
+                        //     alert("ERROR at line "+err.location.start.line+
+                        //         ":"+err.location.start.column+" >> "+err);
+                        // }
+                        // else if(err.msg !== undefined){
+                        //     alert(err.msg);
+                        // }
+                        // else{
+                            console.log(err);
+                            alert(err.toString());
+                        // }
                     }
                     coconut.className = coconut.className.replace(/\bspinning\b/,'');
                 }, 20);

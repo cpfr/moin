@@ -5773,6 +5773,9 @@ var mtyParser = (function() {
                 return "line "+this.line+", column "+this.column;
             }
         }
+        this.createPos = function(line, column){
+            return new Pos(line, column);
+        }
 
         // ---------------------------------------------------------------
         // ---------------------------------------------------------------
