@@ -17,7 +17,17 @@ self.addEventListener('message', function(e) {
         }
         catch(err){
             var error = err;
-            error.string = err.toString();
+            if(error.name == "SyntaxError"){
+                error.type = "SyntaxError";
+                error.pos = mtyParser.createPos(error.location.start.line,
+                                                error.location.start.column);
+                error.endPos = mtyParser.createPos(error.location.end.line,
+                                                error.location.end.column);
+
+                error.string = error.toString()+" at "+error.pos;
+            }else{
+                error.string = err.toString();
+            }
             self.postMessage({cmd:"error", error : JSON.stringify(error)});
         }
 

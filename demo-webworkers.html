@@ -233,8 +233,12 @@ while i < 10:
 
         function onError(error){
             if(error.type == "ContextError"){
-                print("\nERROR: "+error);
-            }else{
+                print("\nERROR: "+error+"\n");
+            }
+            else if(error.type == "SyntaxError"){
+                print(error+"\n");
+            }
+            else{
                 alert(error);
             }
         }

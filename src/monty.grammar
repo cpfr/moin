@@ -26,8 +26,9 @@
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------
     
-    function Node(pos, name){
+    function Node(pos, endPos, name){
         this.pos = pos;
+        this.endPos = endPos;
         this.name = name;
 
         this.toString = function(){
@@ -43,8 +44,9 @@
     
     Declaration.prototype = new Node();
     Declaration.prototype.constructor = Declaration;
-    function Declaration(pos, visibility){
+    function Declaration(pos, endPos, visibility){
         this.pos = pos;
+        this.endPos = endPos;
         this.name = "Declaration";
         this.visibility = visibility || "~";
 
@@ -55,8 +57,9 @@
     
     Statement.prototype = new Node();
     Statement.prototype.constructor = Statement;
-    function Statement(pos){
+    function Statement(pos, endPos){
         this.pos = pos;
+        this.endPos = endPos;
         this.name = "Statement";
 
         this.isStatement = function(){return true;};
@@ -66,8 +69,9 @@
     
     Expression.prototype = new Node();
     Expression.prototype.constructor = Expression;
-    function Expression(pos, value){
+    function Expression(pos, endPos, value){
         this.pos = pos;
+        this.endPos = endPos;
         this.name = "Expression";
         this.value = value || undefined;
 
@@ -76,8 +80,8 @@
         this.getValue = function(){ return self.value; }
     }
 
-    this.createExpression = function (pos, value){
-        return new Expression(pos, value);
+    this.createExpression = function (pos, endPos, value){
+        return new Expression(pos, endPos, value);
     }
 
     // ---------------------------------------------------------------
@@ -85,9 +89,10 @@
     
     WhileLoop.prototype = new Statement();
     WhileLoop.prototype.constructor = WhileLoop;
-    function WhileLoop(pos, condition, body){
+    function WhileLoop(pos, endPos, condition, body){
         this.name = "WhileLoop";
         this.pos = pos;
+        this.endPos = endPos;
         this.condition = condition;
         this.body = body;
     }
@@ -96,9 +101,10 @@
     
     IfStatement.prototype = new Statement();
     IfStatement.prototype.constructor = IfStatement;
-    function IfStatement(pos, condition, trueBody, falseBody){
+    function IfStatement(pos, endPos, condition, trueBody, falseBody){
         this.name = "IfStatement";
         this.pos = pos;
+        this.endPos = endPos;
         this.condition = condition;
         this.trueBody = trueBody;
         this.falseBody = falseBody;
@@ -108,9 +114,10 @@
     
     Literal.prototype = new Expression();
     Literal.prototype.constructor = Literal;
-    function Literal(pos, value, type){
+    function Literal(pos, endPos, value, type){
         this.name = "Literal";
         this.pos = pos;
+        this.endPos = endPos;
         this.value = value;
         this.type = type || null;
 
@@ -123,9 +130,10 @@
     
     FunctionCall.prototype = new Expression();
     FunctionCall.prototype.constructor = FunctionCall;
-    function FunctionCall(pos, functionName, parameters, type){
+    function FunctionCall(pos, endPos, functionName, parameters, type){
         this.name = "FunctionCall";
         this.pos = pos;
+        this.endPos = endPos;
         this.functionName = functionName;
         this.parameters = parameters;
         this.type = type || null;
@@ -139,9 +147,10 @@
     
     VariableDeclaration.prototype = new Declaration();
     VariableDeclaration.prototype.constructor = VariableDeclaration;
-    function VariableDeclaration(pos, varName, type, constant){
+    function VariableDeclaration(pos, endPos, varName, type, constant){
         this.name = "VariableDeclaration";
         this.pos = pos;
+        this.endPos = endPos;
         this.variableName = varName;
         this.type = type;
         this.constant = constant || false;
@@ -156,9 +165,10 @@
     
     FunctionDeclaration.prototype = new Declaration();
     FunctionDeclaration.prototype.constructor = FunctionDeclaration;
-    function FunctionDeclaration(pos, funName, params, returnType, body){
+    function FunctionDeclaration(pos, endPos, funName, params, returnType, body){
         this.name = "FunctionDeclaration";
         this.pos = pos;
+        this.endPos = endPos;
         this.functionName = funName;
         this.parameters = params;
         this.returnType = returnType;
@@ -169,9 +179,10 @@
     
     ClassDeclaration.prototype = new Declaration();
     ClassDeclaration.prototype.constructor = ClassDeclaration;
-    function ClassDeclaration(pos, clsName, superClasses, body, abstract){
+    function ClassDeclaration(pos, endPos, clsName, superClasses, body, abstract){
         this.name = "ClassDeclaration";
         this.pos = pos;
+        this.endPos = endPos;
         this.className = clsName;
         this.superClasses = superClasses;
         this.body = body;
@@ -182,38 +193,41 @@
     
     VariableAccess.prototype = new Expression();
     VariableAccess.prototype.constructor = VariableAccess;
-    function VariableAccess(pos, varName){
+    function VariableAccess(pos, endPos, varName){
         this.name = "VariableAccess";
         this.pos = pos;
+        this.endPos = endPos;
         this.variableName = varName;
     }
 
-    this.createVariableAccess = function(pos, varName){
-        return new VariableAccess(pos, varName);
+    this.createVariableAccess = function(pos, endPos, varName){
+        return new VariableAccess(pos, endPos, varName);
     }
 
     // ---------------------------------------------------------------
     
     Assignment.prototype = new Statement();
     Assignment.prototype.constructor = Assignment;
-    function Assignment(pos, left, right){
+    function Assignment(pos, endPos, left, right){
         this.name = "Assignment";
         this.pos = pos;
+        this.endPos = endPos;
         this.left = left;
         this.right = right;
     }
 
-    this.createAssignment = function(pos, left, right){
-        return new Assignment(pos, left, right);
+    this.createAssignment = function(pos, endPos, left, right){
+        return new Assignment(pos, endPos, left, right);
     }
 
     // ---------------------------------------------------------------
     
     CommandStatement.prototype = new Statement();
     CommandStatement.prototype.constructor = CommandStatement;
-    function CommandStatement(pos, command, argument){
+    function CommandStatement(pos, endPos, command, argument){
         this.name = "CommandStatement";
         this.pos = pos;
+        this.endPos = endPos;
         this.command = command;
         this.argument = argument;
     }
@@ -223,9 +237,10 @@
 
     Block.prototype = new Node();
     Block.prototype.constructor = Block;
-    function Block(pos, contents, blockType){
+    function Block(pos, endPos, contents, blockType){
         this.name = "Block";
         this.pos = pos;
+        this.endPos = endPos;
         this.statements = [];
         this.blockType = blockType;
         contents = contents || [];
@@ -277,26 +292,28 @@
         }
     }
 
-    this.createBlock = function(pos, contents, blockType){
-        return new Block(pos, contents, blockType);
+    this.createBlock = function(pos, endPos, contents, blockType){
+        return new Block(pos, endPos, contents, blockType);
     }
 
     // ---------------------------------------------------------------
     
     UnaryExpression.prototype = new Expression();
     UnaryExpression.prototype.constructor = UnaryExpression;
-    function UnaryExpression(pos, op, value){
+    function UnaryExpression(pos, endPos, op, value){
         this.name = "UnaryExpression";
         this.pos = pos;
+        this.endPos = endPos;
         this.op = op;
         this.value = value;
     }
 
     BinaryExpression.prototype = new Expression();
     BinaryExpression.prototype.constructor = BinaryExpression;
-    function BinaryExpression(pos, left, op, right){
+    function BinaryExpression(pos, endPos, left, op, right){
         this.name = "BinaryExpression";
         this.pos = pos;
+        this.endPos = endPos;
         this.left = left;
         this.op = op;
         this.right = right;
@@ -309,19 +326,24 @@
         return new Pos(loc.start.line, loc.start.column);
     }
 
+    function getCurrentEndPos(){
+        var loc = location();
+        return new Pos(loc.end.line, loc.end.column);
+    }
+
     // ---------------------------------------------------------------
 
     function leftAssociative(lefts, right) {
         if (!lefts.length) return right;
         var last = lefts.pop();
-        return new BinaryExpression(last.pos,
+        return new BinaryExpression(last.pos, last.endPos,
             leftAssociative(lefts, last.exp), last.op, right);
     }
 
     function rightAssociative(left, rights) {
         if (!rights.length) return left;
         var first = rights.shift();
-        return new BinaryExpression(first.pos,
+        return new BinaryExpression(first.pos, first.endPos,
             left, first.op, rightAssociative(first.exp, rights));
     }
     
@@ -421,10 +443,12 @@
     }
 
     function createNestedIfElifStatements(ifelifs, elseblock){
-        if(ifelifs.length == 0){return elseblock || new Block(new Pos(-1,-1));}
+        if(ifelifs.length == 0){
+            return elseblock || new Block(new Pos(-1,-1),new Pos(-1,-1));
+        }
         var ifobj = ifelifs.shift();
-        return new IfStatement(ifobj.pos, ifobj.condition, ifobj.body,
-            createNestedIfElifStatements(ifelifs, elseblock));
+        return new IfStatement(ifobj.pos, ifobj.endPos, ifobj.condition,
+            ifobj.body, createNestedIfElifStatements(ifelifs, elseblock));
     }
 }
 
@@ -436,7 +460,10 @@
 
 moduleDeclaration = /*importLine* */
     contents:(classDeclaration / statement)*
-    { return new Block(getCurrentPos(), contents, "module"); }
+    { return new Block(getCurrentPos(),
+        getCurrentEndPos(),
+        contents, "module");
+    }
 
 declaration = independentDeclaration
             / classDeclaration
@@ -449,7 +476,9 @@ declWithAssignment = vardecl:(variableDeclaration / constantDeclaration)
                                 return [
                                     vardecl,
                                     new Assignment(getCurrentPos(),
+                                        getCurrentEndPos(),
                                         new VariableAccess(vardecl.pos,
+                                                        vardecl.endPos,
                                                         vardecl.variableName),
                                         value)
                                     ];
@@ -471,6 +500,7 @@ classDeclaration = abstract:('abstract' _)? 'class' _nonchar_ _
                     _ DEDENT
                     {
                         return new ClassDeclaration(getCurrentPos(),
+                            getCurrentEndPos(),
                             className, superClasses, members, abstract!=null);
                     }
 
@@ -501,12 +531,12 @@ accessModifier = '#' / '+' / '-' / '~'
 variableDeclaration = type:type _ varname:Identifier
                     {
                         return new VariableDeclaration(getCurrentPos(),
-                            varname, type);
+                            getCurrentEndPos(), varname, type);
                     }
 constantDeclaration = type:type _ varname:ConstantIdentifier
                     {
                         return new VariableDeclaration(getCurrentPos(),
-                            varname, type, true);
+                            getCurrentEndPos(), varname, type, true);
                     }
 
 type = ClassIdentifier
@@ -532,6 +562,7 @@ functionDeclaration = ret:(type?) _ name:Identifier
             {
                 body.blockType = "function";
                 return new FunctionDeclaration(getCurrentPos(),
+                                                getCurrentEndPos(),
                                                 name, params, ret, body);
             }
 
@@ -594,14 +625,17 @@ stmWithEOL = stm:commandStm EOL {return stm;}
             / left:expression operator:'.' right:functionCall EOL
 
 commandStm = (cmd:('return' / 'yield' / 'raise') _nonchar_ _ exp:expression?
-                { return new CommandStatement(getCurrentPos(), cmd, exp); })
+                { return new CommandStatement(getCurrentPos(),
+                    getCurrentEndPos(), cmd, exp); })
             / ( cmd:('skip' / 'break')
-                { return new CommandStatement(getCurrentPos(), cmd, null); })
+                { return new CommandStatement(getCurrentPos(),
+                    getCurrentEndPos(), cmd, null); })
 
 /* while loop: The expression must be a condition (i.e. Boolean expression). */
 whileStatement = 'while' _nonchar_ _ cond:expression _ body:block
                 { body.blockType = "loop";
-                return new WhileLoop(getCurrentPos(), cond, body); }
+                return new WhileLoop(getCurrentPos(),
+                    getCurrentEndPos(), cond, body); }
 
 /* for loop: The expression must be of type Iterable<T>. */
 /* forStatement = 'for' Identifier 'in' expression block */
@@ -613,7 +647,8 @@ ifStatement = 'if' _nonchar_ _ cond:expression _ thenBlock:block
         ifelifs.unshift({
                     condition: cond,
                     body: thenBlock,
-                    pos: getCurrentPos()
+                    pos: getCurrentPos(),
+                    endPos : getCurrentEndPos()
                 });
         return createNestedIfElifStatements(ifelifs, elseBlock);
     }
@@ -623,7 +658,8 @@ elif = 'elif' _nonchar_ _ elifCondition:expression _ elifBlock:block
             return {
                     condition: elifCondition,
                     body: elifBlock,
-                    pos: getCurrentPos()
+                    pos: getCurrentPos(),
+                    endPos : getCurrentEndPos()
                 };
         }
 
@@ -631,7 +667,8 @@ elif = 'elif' _nonchar_ _ elifCondition:expression _ elifBlock:block
     ('handle' variableDeclaration? handleBlock:block)+ */
 
 assignment = left:expression _ ':=' _ right:expression EOL
-            { return new Assignment(getCurrentPos(), left, right); }
+            { return new Assignment(getCurrentPos(), getCurrentEndPos(),
+                left, right); }
 
 /*unpackAssignment = left:unpackList ':=' right:expression EOL
 unpackList = unpackable (',' unpackable)+
@@ -641,8 +678,9 @@ compoundAssignment = left:expression _ op:compoundSymbol '='
                     _ right:expression EOL
             {
                 var compound = new BinaryExpression(getCurrentPos(),
-                    left, op, right);
-                return new Assignment(getCurrentPos(), left, compound);
+                    getCurrentEndPos(), left, op, right);
+                return new Assignment(getCurrentPos(), getCurrentEndPos(),
+                    left, compound);
             }
 
 compoundSymbol = '+' / '-' / '*' / '/' / '%' / '^'
@@ -652,7 +690,8 @@ functionCall = funName:(type / Identifier)
                 Lparenthesis params:expressionList? Rparenthesis
                 {
                     params = params || [];
-                    return new FunctionCall(getCurrentPos(), funName, params);
+                    return new FunctionCall(getCurrentPos(),
+                        getCurrentEndPos(), funName, params);
                 }
 expressionList = head:expression tail:((',' _ exp:expression _ {return exp;})*)
             {
@@ -680,65 +719,88 @@ unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
                     { return new UnaryExpression(op, exp); }
 
 asExpression = lefts:(exp:orExpression _ 
-                op:(op:'as' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                op:(op:'as' _nonchar_ {
+                        return {op:op, pos:getCurrentPos(),
+                            endPos : getCurrentEndPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos : op.endPos}; })*
                 right:orExpression
                 { return leftAssociative(lefts, right); }
 
 orExpression = lefts:(exp:andExpression _ 
-                op:(op:'or' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                op:(op:'or' _nonchar_ { 
+                    return {op:op, pos:getCurrentPos(),
+                        endPos : getCurrentEndPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos};})*
                 right:andExpression
                 { return leftAssociative(lefts, right); }
 
 andExpression = lefts:(exp:inExpression _
-                op:(op:'and' _nonchar_ {return {op:op, pos:getCurrentPos()};}) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                op:(op:'and' _nonchar_ {return {op:op, pos:getCurrentPos(), 
+                        endPos : getCurrentEndPos()};}) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:inExpression
                 { return leftAssociative(lefts, right); }
 
 inExpression = lefts:(exp:eqExpression _ 
-                op:(op:'in' _nonchar_ { return {op:op, pos:getCurrentPos()};}) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                op:(op:'in' _nonchar_ { return {op:op, pos:getCurrentPos(), 
+                        endPos : getCurrentEndPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:eqExpression
                 { return leftAssociative(lefts, right); }
 
 eqExpression = lefts:(exp:cmpExpression _ 
                 op:(op:('=' / '!=' / isop:'is' _nonchar_ {return isop;} )
-                    { return { op:op, pos:getCurrentPos()} }) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                    { return { op:op, pos:getCurrentPos(),
+                        endPos : getCurrentEndPos()} }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:cmpExpression
                 { return leftAssociative(lefts, right); }
 
 cmpExpression = lefts:(exp:addExpression _ 
                 op:(op:('<=' / '>=' / '<' / '>') 
-                    { return {op:op, pos:getCurrentPos()}; }) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                    { return {op:op, pos:getCurrentPos(),
+                        endPos : getCurrentEndPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:addExpression
                 { return leftAssociative(lefts, right); }
 
 addExpression = lefts:(exp:mulExpression _ 
                 op:(_nocompound_ op:('+' / '-')
-                    {return {op:op, pos:getCurrentPos()};}) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                    {return {op:op, pos:getCurrentPos(),
+                        endPos : getCurrentEndPos()};}) _
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:mulExpression
                 { return leftAssociative(lefts, right); }
 
 mulExpression = lefts:(exp:powExpression _ 
                 op:(_nocompound_ op:('*' / '/' / '%' )
-                    { return { op:op, pos:getCurrentPos() }; }) _ 
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                    { return { op:op, pos:getCurrentPos(), 
+                        endPos : getCurrentEndPos() }; }) _ 
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:powExpression
                 { return leftAssociative(lefts, right); }
 
-powExpression = left:memberAccess rights:( _ _nocompound_ op:'^' _
-                    exp:memberAccess
-                    { return {op:op, exp:exp, pos:getCurrentPos()} })*
+powExpression = left:memberAccess rights:( _ _nocompound_ op:(op:'^'
+                { return { op:op, pos:getCurrentPos(), 
+                        endPos : getCurrentEndPos() }; } ) _
+                exp:memberAccess
+                    { return {op:op.op, exp:exp, pos:op.pos, 
+                        endPos : op.endPos} })*
                 { return rightAssociative(left, rights); }
 
 memberAccess = lefts:(exp:nonBinaryExpression _ 
-                op:(op:'.' { return { op:op, pos:getCurrentPos()}; }) _
-                    { return {exp:exp, op:op.op, pos:op.pos}; })*
+                op:(op:'.' { return { op:op, pos:getCurrentPos(),
+                        endPos : getCurrentEndPos()}; }) _
+                    { return {exp:exp, op:op.op, pos:op.pos,
+                        endPos:op.endPos}; })*
                 right:nonBinaryExpression
                 { return leftAssociative(lefts, right); }
 
@@ -746,10 +808,13 @@ functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->
 
 primary = Lparenthesis exp:expression Rparenthesis { return exp }
         / literal
-        / name:Identifier { return new VariableAccess(getCurrentPos(), name); }
+        / name:Identifier { return new VariableAccess(getCurrentPos(),
+                                        getCurrentEndPos(), name); }
         / name:ConstantIdentifier
-            { return new VariableAccess(getCurrentPos(), name); }
-        / 'self' { return new SelfExpression(getCurrentPos()); }
+            { return new VariableAccess(getCurrentPos(),
+                                        getCurrentEndPos(), name); }
+        / 'self' { return new SelfExpression(getCurrentPos(),
+                                        getCurrentEndPos()); }
         // 'parent(' parent:type ')'
 
 literal = IntLiteral
@@ -829,7 +894,8 @@ patternList
 // ----------------------------------------------
 
 BoolLiteral = value:('true' / 'false')
-            { return new Literal(getCurrentPos(), value == 'true', "Bool");}
+            { return new Literal(getCurrentPos(), getCurrentEndPos(),
+                                value == 'true', "Bool");}
 
 // --- Number Literals -----------------------------------------------
 
@@ -842,21 +908,21 @@ IntLiteral = firstDigit:Digit
                 if(base != null){
                     baseNum = convertToInt(base, 10);
                 }
-                return new Literal(getCurrentPos(),
+                return new Literal(getCurrentPos(), getCurrentEndPos(),
                                     convertToInt(numString, baseNum), "Int");
             }
 
 FloatLiteral = FloatPointLiteral / FloatExponentLiteral
 FloatPointLiteral = int:Digit* '.' frac:Digit*
                     {
-                        return new Literal(getCurrentPos(),
+                        return new Literal(getCurrentPos(), getCurrentEndPos(),
                                     parseFloat(int.join("")+"."+frac.join("")),
                                     "Float");
                     }
 FloatExponentLiteral = int:Digit* e:[Ee] sign:[+-]? exp:Digit*
                     {
                         if(sign == null){sign = "+";}
-                        return new Literal(getCurrentPos(),
+                        return new Literal(getCurrentPos(), getCurrentEndPos(),
                             parseFloat(int.join("")+e+sign+exp.join("")),
                             "Float");
                     }
@@ -870,13 +936,13 @@ Base = '_' base:Digit+ {return base.join("")}
 
 StringLiteral = raw:'raw'? '"' content:(StringEscapeSequence
                                     / ((!'\\' !'"' !'\n' !'\r') .))* '"'
-                {return new Literal(getCurrentPos(),
+                {return new Literal(getCurrentPos(), getCurrentEndPos(),
                                     flattenStringLiteral(content, raw=="raw"),
                                     "String");}
 
 CharLiteral = '\'' content:(StringEscapeSequence
                             / ((!'\\' !'\'' !'\n' !'\r') .)) '\''
-                {return new Literal(getCurrentPos(),
+                {return new Literal(getCurrentPos(), getCurrentEndPos(),
                                     flattenStringLiteral(content, false),
                                     "Char");}
                 
@@ -981,7 +1047,7 @@ block = ':' EOL INDENT
             if(Array.isArray(statements)){
                 body = body.concat(statements);
             }
-            return new Block(getCurrentPos(), body);
+            return new Block(getCurrentPos(), getCurrentEndPos(), body);
         }
 
 // -- white spaces --------------------------------------------

@@ -1,6 +1,7 @@
 // maybe add a kind of stack trace next time
-function ContextError(pos, node, msg){
+function ContextError(pos, endPos, node, msg){
     this.pos = pos;
+    this.endPos = endPos;
     this.node = node;
     this.msg = msg;
 
@@ -9,8 +10,9 @@ function ContextError(pos, node, msg){
     }
 }
 
-function InternalError(pos, node, msg, jspos, filename){
+function InternalError(pos, endPos, node, msg, jspos, filename){
     this.pos = pos;
+    this.endPos = endPos;
     this.node = node;
     this.msg = msg;
     this.jspos = jspos;
@@ -57,8 +59,8 @@ function MtyInterpreter(ast, printfn, readfn){
             blockIndex--;
         }
         if(result == undefined){
-            throw new ContextError(currentNode.pos, currentNode,
-                        "The variable '"+currentNode.variableName
+            throw new ContextError(currentNode.pos, currentNode.endPos,
+                        currentNode, "The variable '"+currentNode.variableName
                         +"' could not be resolved.");
         }
         return result;
@@ -124,7 +126,7 @@ function MtyInterpreter(ast, printfn, readfn){
                     _printfn(""+param.getValue() + "\n");
                     break;
                 default:
-                    throw new ContextError(node.pos, node,
+                    throw new ContextError(node.pos, node.endPos, node,
                         "The function '"+node.functionName
                         +"' could not be resolved.");
             }
@@ -140,9 +142,11 @@ function MtyInterpreter(ast, printfn, readfn){
                     if(Array.isArray(param)){ param = param[0]; }
                     var arg = node.parameters[i];
                     var varaccess = mtyParser.createVariableAccess(arg.pos,
+                                                        arg.endPos,
                                                         param.variableName);
                     contents.push(param);
                     contents.push(mtyParser.createAssignment(arg.pos,
+                                                            arg.endPos,
                                                             varaccess, arg));
                 }
                 else{
@@ -152,7 +156,7 @@ function MtyInterpreter(ast, printfn, readfn){
                     contents.push(assign);
                 }
             }
-            var paramBlock = mtyParser.createBlock(funDecl.pos,
+            var paramBlock = mtyParser.createBlock(funDecl.pos, funDecl.endPos,
                                                     contents, "parameters");
 
             _eval(paramBlock);
@@ -213,14 +217,14 @@ function MtyInterpreter(ast, printfn, readfn){
     var _checkAbortBlock = function(node){
         if((_abortBlock.command == "break")||(_abortBlock.command == "skip")){
             if((node.blockType == "function")||(node.blockType == "module")){
-                throw new ContextError(node.pos, node,
+                throw new ContextError(node.pos, node.endPos, node,
                         "Invalid "+_abortBlock.command
                         +" statement outside loop.");
             }
         }
         else if(_abortBlock.command == "return"){
             if(node.blockType == "module"){
-                throw new ContextError(node.pos, node,
+                throw new ContextError(node.pos, node.endPos, node,
                         "Invalid return statement outside function.");
                
             }
@@ -315,11 +319,12 @@ function MtyInterpreter(ast, printfn, readfn){
                 if(currentNode == undefined){
                     currentNode = {
                         name : "",
-                        pos : mtyParser.createPos(-1,-1)
+                        pos : mtyParser.createPos(-1,-1),
+                        endPos : mtyParser.createPos(-1,-1)
                     }
                 }
-                var err = new InternalError(currentNode.pos, currentNode,
-                                        err.message,
+                var err = new InternalError(currentNode.pos, currentNode.endPos,
+                                        currentNode, err.message,
                                         mtyParser.createPos(err.lineNumber,
                                                             err.columnNumber),
                                         err.fileName);
