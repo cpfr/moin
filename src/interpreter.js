@@ -306,21 +306,25 @@ function MtyInterpreter(ast, printfn, readfn){
             _eval(ast);
         }
         catch(err){
-            if(err instanceof ContextError){
+            if(err.constructor.name == "ContextError"){
+                err.type = "ContextError";
                 throw err;
             }
             else{
+                err.type = "__internal__";
                 if(currentNode == undefined){
                     currentNode = {
                         name : "",
                         pos : mtyParser.createPos(-1,-1)
                     }
                 }
-                throw new InternalError(currentNode.pos, currentNode,
+                var err = new InternalError(currentNode.pos, currentNode,
                                         err.message,
                                         mtyParser.createPos(err.lineNumber,
                                                             err.columnNumber),
                                         err.fileName);
+                err.type = "InternalError";
+                throw err;
             }
         }
     }

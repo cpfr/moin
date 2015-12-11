@@ -230,6 +230,14 @@ while i < 10:
         function clearOutput(){
             document.getElementById("output").value = "";
         }
+
+        function onError(error){
+            if(error.type == "ContextError"){
+                print("\nERROR: "+error);
+            }else{
+                alert(error);
+            }
+        }
        
         function parse(){
             var coconut = document.getElementById("coconut");
@@ -238,6 +246,7 @@ while i < 10:
             var codeInput = document.getElementById("input")
             moin(codeInput.value, {
                 print      : print,
+                err        : onError,
                 scriptpath : "src",
                 done       : function(){
                     coconut.className = coconut.className

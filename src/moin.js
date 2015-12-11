@@ -54,6 +54,11 @@ function moin(code, options){
                 case "print":
                     print(data.value);
                     break;
+                case "error":
+                    var error = JSON.parse(data.error);
+                    error.toString = function(){return error.string;};
+                    err(error);
+                    break;
                 case "done":
                     worker.terminate();
                     done();

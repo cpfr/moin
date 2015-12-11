@@ -9,9 +9,18 @@ function print(msg){
 self.addEventListener('message', function(e) {
     if(e.data.cmd == "run"){
         self.postMessage({cmd:"started"});
-        var ast = mtyParser.parse(e.data.code+"\n");
-        var interpreter = new MtyInterpreter(ast, print);
-        interpreter.run();
+
+        try{
+            var ast = mtyParser.parse(e.data.code+"\n");
+            var interpreter = new MtyInterpreter(ast, print);
+            interpreter.run();
+        }
+        catch(err){
+            var error = err;
+            error.string = err.toString();
+            self.postMessage({cmd:"error", error : JSON.stringify(error)});
+        }
+
         self.postMessage({cmd:"done"});
     }
     else{
