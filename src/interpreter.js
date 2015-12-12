@@ -82,9 +82,9 @@ function MtyInterpreter(ast, printfn, readfn){
         var result = undefined;
         
         while((result == undefined)&&(blockIndex >= 0)){
-            console.log(_blockStack[blockIndex]);
+            // console.log(_blockStack[blockIndex]);
             result = _blockStack[blockIndex].resolveClass(className);
-            console.log(className);
+            // console.log(className);
             blockIndex--;
         }
         return result;
@@ -126,15 +126,22 @@ function MtyInterpreter(ast, printfn, readfn){
         return node;
     }
 
-    var classInstantiation = function(node){
-        mtyParser.createObject(pos, endPos, block, type);
+    var classInstantiation = function(node, clsDecl){
+        console.log(clsDecl.createInstance(node));
+        return clsDecl.createInstance(node);
+        // var attributes = ;
+        // var methods = ;
+        // var members = mtyParser.createBlock(clsDecl.body.pos,
+        //                                     clsDecl.body.endPos,
+        //                                     [], "class");
+        // mtyParser.createObject(node.pos, node.endPos, block, type);
     }
 
     _actions['FunctionCall'] = function(node) {
         var clsDecl = _resolveClass(node.functionName);
-        console.log(clsDecl);
+        // console.log(clsDecl);
         if(clsDecl != undefined){
-            return classInstantiation(node);
+            return classInstantiation(node, clsDecl);
         }else{
             var funDecl = _resolveFunction(node.functionName);
             if(funDecl == undefined){

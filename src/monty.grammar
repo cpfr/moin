@@ -199,14 +199,45 @@
     
     ClassDeclaration.prototype = new Declaration();
     ClassDeclaration.prototype.constructor = ClassDeclaration;
-    function ClassDeclaration(pos, endPos, clsName, superClasses, body, abstract){
+    function ClassDeclaration(pos, endPos, clsName, superClasses, members,
+                            abstract){
         this.name = "ClassDeclaration";
         this.pos = pos;
         this.endPos = endPos;
         this.className = clsName;
         this.superClasses = superClasses;
-        this.body = body;
+        this.members = members;
         this.abstract = abstract || false;
+
+        this.createInstance = function(callNode){
+            var contents = [];
+            for(var i = 0; i < members.length; i++){
+                var member = this.members[i];
+                if(member.name == "VariableDeclaration"){
+                    contents.push(new VariableDeclaration(member.pos,
+                                                        member.endPos,
+                                                        member.variableName,
+                                                        member.type,
+                                                        member.constant));
+                }
+                else if(member.name == "FunctionDeclaration"){
+                    contents.push(new FunctionDeclaration(member.pos,
+                                                        member.endPos,
+                                                        member.functionName,
+                                                        member.parameters,
+                                                        member.returnType,
+                                                        member.body));
+                }
+                else{
+                    //throw "ERR";
+                    console.log(member);
+                    console.log("EEEE");
+                }
+            }
+            var body = new Block(this.pos, this.endPos, contents, "class");
+            return new MtyObject(callNode.pos, callNode.endPos, block,
+                                this.className);
+        }
     }
 
     // ---------------------------------------------------------------
