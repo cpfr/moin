@@ -77,6 +77,19 @@ function MtyInterpreter(ast, printfn, readfn){
         return result;
     }
 
+    var _resolveClass = function(className){
+        var blockIndex = _blockStack.length-1;
+        var result = undefined;
+        
+        while((result == undefined)&&(blockIndex >= 0)){
+            console.log(_blockStack[blockIndex]);
+            result = _blockStack[blockIndex].resolveClass(className);
+            console.log(className);
+            blockIndex--;
+        }
+        return result;
+    }
+
     // -------------------------------------------------------------------------
     // -- evaluation action functions ------------------------------------------
     // -------------------------------------------------------------------------
@@ -113,62 +126,72 @@ function MtyInterpreter(ast, printfn, readfn){
         return node;
     }
 
+    var classInstantiation = function(node){
+        mtyParser.createObject(pos, endPos, block, type);
+    }
+
     _actions['FunctionCall'] = function(node) {
-        var funDecl = _resolveFunction(node.functionName);
-        if(funDecl == undefined){
-            switch(node.functionName){
-                case "print":
-                    var param = _eval(node.parameters[0]);
-                    _printfn(""+param.getValue());
-                    break;
-                case "println":
-                    var param = _eval(node.parameters[0]);
-                    _printfn(""+param.getValue() + "\n");
-                    break;
-                default:
-                    throw new ContextError(node.pos, node.endPos, node,
-                        "The function '"+node.functionName
-                        +"' could not be resolved.");
+        var clsDecl = _resolveClass(node.functionName);
+        console.log(clsDecl);
+        if(clsDecl != undefined){
+            return classInstantiation(node);
+        }else{
+            var funDecl = _resolveFunction(node.functionName);
+            if(funDecl == undefined){
+                switch(node.functionName){
+                    case "print":
+                        var param = _eval(node.parameters[0]);
+                        _printfn(""+param.getValue());
+                        break;
+                    case "println":
+                        var param = _eval(node.parameters[0]);
+                        _printfn(""+param.getValue() + "\n");
+                        break;
+                    default:
+                        throw new ContextError(node.pos, node.endPos, node,
+                            "The function '"+node.functionName
+                            +"' could not be resolved.");
+                }
             }
-        }
-        else{
-            var contents = [];
-            var argc = node.parameters.length;
-            var parc = funDecl.parameters.length;
+            else{
+                var contents = [];
+                var argc = node.parameters.length;
+                var parc = funDecl.parameters.length;
 
-            for(var i=0; i < parc; i++){
-                if(i < argc){
-                    var param = funDecl.parameters[i];
-                    if(Array.isArray(param)){ param = param[0]; }
-                    var arg = node.parameters[i];
-                    var varaccess = mtyParser.createVariableAccess(arg.pos,
-                                                        arg.endPos,
-                                                        param.variableName);
-                    contents.push(param);
-                    contents.push(mtyParser.createAssignment(arg.pos,
+                for(var i=0; i < parc; i++){
+                    if(i < argc){
+                        var param = funDecl.parameters[i];
+                        if(Array.isArray(param)){ param = param[0]; }
+                        var arg = node.parameters[i];
+                        var varaccess = mtyParser.createVariableAccess(arg.pos,
                                                             arg.endPos,
-                                                            varaccess, arg));
+                                                            param.variableName);
+                        contents.push(param);
+                        contents.push(mtyParser.createAssignment(arg.pos,
+                                                                arg.endPos,
+                                                                varaccess, arg));
+                    }
+                    else{
+                        var param = funDecl.parameters[i][0];
+                        var assign = funDecl.parameters[i][1];
+                        contents.push(param);
+                        contents.push(assign);
+                    }
                 }
-                else{
-                    var param = funDecl.parameters[i][0];
-                    var assign = funDecl.parameters[i][1];
-                    contents.push(param);
-                    contents.push(assign);
-                }
-            }
-            var paramBlock = mtyParser.createBlock(funDecl.pos, funDecl.endPos,
-                                                    contents, "parameters");
+                var paramBlock = mtyParser.createBlock(funDecl.pos, funDecl.endPos,
+                                                        contents, "parameters");
 
-            _eval(paramBlock);
-            // the param block is a parent block of the function body block
-            // this way, the parameter declarations are visible within the
-            // function body
-            _blockStack.push(paramBlock);
-            _eval(funDecl.body);
-            _blockStack.pop();
+                _eval(paramBlock);
+                // the param block is a parent block of the function body block
+                // this way, the parameter declarations are visible within the
+                // function body
+                _blockStack.push(paramBlock);
+                _eval(funDecl.body);
+                _blockStack.pop();
 
-            _abortBlock = undefined;
-            return _getReturnValue();
+                _abortBlock = undefined;
+                return _getReturnValue();
+        }
         }
     }
 

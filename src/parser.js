@@ -5918,6 +5918,26 @@ var mtyParser = (function() {
 
         // ---------------------------------------------------------------
         
+        MtyObject.prototype = new Expression();
+        MtyObject.prototype.constructor = MtyObject;
+        function MtyObject(pos, endPos, block, type){
+            this.name = "MtyObject";
+            this.pos = pos;
+            this.endPos = endPos;
+            this.block = block;
+            this.type = type || null;
+
+            this.getValue = function(){
+                return this.value;
+            }
+        }
+
+        this.createObject = function(pos, endPos, block, type){
+            return new MtyObject(pos, endPos, block, type);
+        }
+
+        // ---------------------------------------------------------------
+        
         Literal.prototype = new Expression();
         Literal.prototype.constructor = Literal;
         function Literal(pos, endPos, value, type){
@@ -6051,9 +6071,9 @@ var mtyParser = (function() {
             this.blockType = blockType;
             contents = contents || [];
 
-            var _variableDeclarations = {};
-            var _functionDeclarations = {};
-            var _classDeclarations = {};
+            this._variableDeclarations = {};
+            this._functionDeclarations = {};
+            this._classDeclarations = {};
 
             var self = this;
             this.addContents = function(contents){
@@ -6065,13 +6085,13 @@ var mtyParser = (function() {
                         if(contents[i].isDeclaration()){
                             var decl = contents[i];
                             if(decl.variableName !== undefined){
-                                _variableDeclarations[decl.variableName] = decl;
+                                this._variableDeclarations[decl.variableName] = decl;
                             }
                             else if(decl.functionName !== undefined){
-                                _functionDeclarations[decl.functionName] = decl;
+                                this._functionDeclarations[decl.functionName] = decl;
                             }
                             else if(decl.className !== undefined){
-                                _classDeclarations[decl.className] = decl;
+                                this._classDeclarations[decl.className] = decl;
                             }
                         }
                         else if(contents[i].isStatement()){
@@ -6086,15 +6106,15 @@ var mtyParser = (function() {
             self.addContents(contents);
 
             this.resolveVariable = function(varname){
-                return _variableDeclarations[varname];
+                return this._variableDeclarations[varname];
             }
 
             this.resolveFunction = function(funname){
-                return _functionDeclarations[funname];
+                return this._functionDeclarations[funname];
             }
 
             this.resolveClass = function(clsname){
-                return _classDeclarations[clsname];
+                return this._classDeclarations[clsname];
             }
         }
 
