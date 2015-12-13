@@ -5977,7 +5977,7 @@ var mtyParser = (function() {
             this.type = type || null;
 
             this.getValue = function(){
-                return this.value;
+                return this;
             }
         }
 

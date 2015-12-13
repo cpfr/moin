@@ -285,9 +285,23 @@ function MtyInterpreter(ast, printfn, readfn){
         }
     }
 
-    _actions['BinaryExpression'] = function(node) {
+    var _memberAccess = function(node, lvalue){
         var left = _eval(node.left).getValue()
-        var right = _eval(node.right).getValue()
+        var right;
+        _blockStack.push(left.block);
+        right = _eval(node.right, lvalue);
+        _blockStack.pop();
+
+        return right;
+    }
+
+    _actions['BinaryExpression'] = function(node, lvalue) {
+        if(node.op == "."){
+            return _memberAccess(node, lvalue);
+        }
+
+        var left = _eval(node.left).getValue();
+        var right = _eval(node.right).getValue();
 
         // result = new Expression();
         result = mtyParser.createExpression();
