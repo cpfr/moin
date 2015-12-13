@@ -206,36 +206,30 @@
         this.endPos = endPos;
         this.className = clsName;
         this.superClasses = superClasses;
-        this.members = members;
+        this.block = new Block(this.pos, this.endPos, members, "class");
         this.abstract = abstract || false;
 
         this.createInstance = function(callNode){
             var contents = [];
-            for(var i = 0; i < members.length; i++){
-                var member = this.members[i];
-                if(member.name == "VariableDeclaration"){
-                    contents.push(new VariableDeclaration(member.pos,
-                                                        member.endPos,
-                                                        member.variableName,
-                                                        member.type,
-                                                        member.constant));
-                }
-                else if(member.name == "FunctionDeclaration"){
-                    contents.push(new FunctionDeclaration(member.pos,
-                                                        member.endPos,
-                                                        member.functionName,
-                                                        member.parameters,
-                                                        member.returnType,
-                                                        member.body));
-                }
-                else{
-                    //throw "ERR";
-                    console.log(member);
-                    console.log("EEEE");
-                }
+            for(var name in this.block._variableDeclarations){
+                var member = this.block._variableDeclarations[name];
+                contents.push(new VariableDeclaration(member.pos,
+                                                    member.endPos,
+                                                    member.variableName,
+                                                    member.type,
+                                                    member.constant));
+            }
+            for(var member in this.block._functionDeclarations){
+                var member = this.block._functionDeclarations[name];
+                contents.push(new FunctionDeclaration(member.pos,
+                                                    member.endPos,
+                                                    member.functionName,
+                                                    member.parameters,
+                                                    member.returnType,
+                                                    member.body));
             }
             var body = new Block(this.pos, this.endPos, contents, "class");
-            return new MtyObject(callNode.pos, callNode.endPos, block,
+            return new MtyObject(callNode.pos, callNode.endPos, body,
                                 this.className);
         }
     }
