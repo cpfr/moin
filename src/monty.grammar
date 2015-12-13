@@ -538,17 +538,36 @@ independentDeclaration = functionDeclaration
                         
 
 classDeclaration = abstract:('abstract' _)? 'class' _nonchar_ _
-                    className:type superClasses:( _ 'inherits' _nonchar_ _
+                    className:type superClasses:( _nonchar_ _ 'inherits'
+                                            _nonchar_ _
                                             types:typeList {return types;})?
                     ':' EOL INDENT _
-                    members:(memberDeclaration+ / ('pass' EOL {return [];}))
+
+                    members: (('pass' EOL {return [];})
+                    / ( firstMember:memberDeclaration
+                        members:((SAMEDENT m:memberDeclaration {return m;})*)
+                        {members.unshift(firstMember); return members;}))
                     _ DEDENT
                     {
                         return new ClassDeclaration(getCurrentPos(),
                             getCurrentEndPos(),
                             className, superClasses, members, abstract!=null);
                     }
-
+/*
+block = ':' EOL INDENT
+            firstStatement:(statement / 'pass' EOL {return null;})
+            statements:(SAMEDENT _ stmt:statement {return stmt;})* DEDENT
+        {
+            var body = []
+            if(firstStatement){
+                body.push(firstStatement);
+            }
+            if(Array.isArray(statements)){
+                body = body.concat(statements);
+            }
+            return new Block(getCurrentPos(), getCurrentEndPos(), body);
+        }
+*/
 
 /*caseClassDeclaration
   : 'case' 'class' type '(' (parameterListWithoutDefaults)? ')' ('inherits' typeList)?
