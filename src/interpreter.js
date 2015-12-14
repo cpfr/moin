@@ -51,6 +51,21 @@ function MtyInterpreter(ast, printfn, readfn){
         _returnValue = val;
     }
 
+    var _resolveSelf = function(){
+        var blockIndex = _blockStack.length-1;
+        var result = undefined;
+        while((result == undefined)&&(blockIndex >= 0)){
+            result = _blockStack[blockIndex].instance;
+            blockIndex--;
+        }
+        if(result == undefined){
+            throw new ContextError(currentNode.pos, currentNode.endPos,
+                        currentNode, "The 'self' keyword may only be used "
+                        + "inside methods of a class'");
+        }
+        return result;
+    }
+
     var _resolveVariable = function(variableName, lvalue){
         var blockIndex = _blockStack.length-1;
         var result = undefined;
@@ -82,9 +97,7 @@ function MtyInterpreter(ast, printfn, readfn){
         var result = undefined;
         
         while((result == undefined)&&(blockIndex >= 0)){
-            // console.log(_blockStack[blockIndex]);
             result = _blockStack[blockIndex].resolveClass(className);
-            // console.log(className);
             blockIndex--;
         }
         return result;
@@ -126,16 +139,23 @@ function MtyInterpreter(ast, printfn, readfn){
         return node;
     }
 
+    _actions['SelfExpression'] = function(node) {
+        return _resolveSelf();
+    }
+
     var classInstantiation = function(node, clsDecl){
         var instance = clsDecl.createInstance(node);
+        instance.block.instance = instance;
 
         // evaluate the initialization statements
         _eval(instance.block);
 
         // call the initializer (if there is one)
         _blockStack.push(clsDecl.block);
+        _blockStack.push(instance.block);
         _eval(mtyParser.createFunctionCall(node.pos, node.endPos, "initializer",
                                 node.parameters));
+        _blockStack.pop();
         _blockStack.pop();
 
         return instance;
@@ -143,7 +163,6 @@ function MtyInterpreter(ast, printfn, readfn){
 
     _actions['FunctionCall'] = function(node) {
         var clsDecl = _resolveClass(node.functionName);
-        // console.log(clsDecl);
         if(clsDecl != undefined){
             return classInstantiation(node, clsDecl);
         }else{

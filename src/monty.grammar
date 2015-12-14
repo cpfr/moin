@@ -129,6 +129,21 @@
     this.createObject = function(pos, endPos, block, type){
         return new MtyObject(pos, endPos, block, type);
     }
+    // ---------------------------------------------------------------
+    
+    SelfExpression.prototype = new Expression();
+    SelfExpression.prototype.constructor = SelfExpression;
+    function SelfExpression(pos, endPos, value, type){
+        this.name = "SelfExpression";
+        this.pos = pos;
+        this.endPos = endPos;
+        this.value = value;
+        this.type = type || null;
+
+        this.getValue = function(){
+            return this.value;
+        }
+    }
 
     // ---------------------------------------------------------------
     
@@ -660,11 +675,12 @@ parameterList = defaultParameterList
                     )
 
 parameterListWithoutDefaults = head:variableDeclaration !( _ ':=')
-                                tail:((',' _ variableDeclaration !( _ ':=') _)*)
+                                tail:((',' _ vd:variableDeclaration !( _ ':=') _
+                                    {return vd;})*)
             {
                 var list = [head];
-                for(var i=0; i < tail.length; i++){
-                    list.push(tail[i][1]);
+                if(tail != null){
+                    list = list.concat(tail);
                 }
                 return list;
             }
@@ -881,13 +897,13 @@ functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->
 
 primary = Lparenthesis exp:expression Rparenthesis { return exp }
         / literal
+        / 'self' _nonchar_ _ { return new SelfExpression(getCurrentPos(),
+                                        getCurrentEndPos()); }
         / name:Identifier { return new VariableAccess(getCurrentPos(),
                                         getCurrentEndPos(), name); }
         / name:ConstantIdentifier
             { return new VariableAccess(getCurrentPos(),
                                         getCurrentEndPos(), name); }
-        / 'self' { return new SelfExpression(getCurrentPos(),
-                                        getCurrentEndPos()); }
         // 'parent(' parent:type ')'
 
 literal = IntLiteral
