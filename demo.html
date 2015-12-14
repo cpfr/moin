@@ -198,18 +198,23 @@
     <a href="https://github.com/cpfr/moin" target="_blank">Fork me on GitHub</a>
 </span>
 
-    <textarea id="input">Int square(Int x):
-    return x*x
+    <textarea id="input">class Point:
+    Int x := 1
+    Int y
 
-println("num\tsquare")
-println("---\t------")
+    + initializer(Int x, Int y):
+        self.x := x
+        self.y := y
 
-Int i := 0
-while i < 10:
-    print(i)
-    print("\t")
-    println(square(i))
-    i += 1
+    + move(Int x, Int y):
+        self.x += x
+        self.y += y
+
+Point p := Point(5,7)
+print(p.x)
+print(" ")
+prinln(p.y)
+
 </textarea>
     <div class="buttons">
         <button onclick="clearOutput()">clear</button>

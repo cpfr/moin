@@ -127,14 +127,18 @@ function MtyInterpreter(ast, printfn, readfn){
     }
 
     var classInstantiation = function(node, clsDecl){
-        console.log(clsDecl.createInstance(node));
-        return clsDecl.createInstance(node);
-        // var attributes = ;
-        // var methods = ;
-        // var members = mtyParser.createBlock(clsDecl.body.pos,
-        //                                     clsDecl.body.endPos,
-        //                                     [], "class");
-        // mtyParser.createObject(node.pos, node.endPos, block, type);
+        var instance = clsDecl.createInstance(node);
+
+        // evaluate the initialization statements
+        _eval(instance.block);
+
+        // call the initializer (if there is one)
+        _blockStack.push(clsDecl.block);
+        _eval(mtyParser.createFunctionCall(node.pos, node.endPos, "initializer",
+                                node.parameters));
+        _blockStack.pop();
+
+        return instance;
     }
 
     _actions['FunctionCall'] = function(node) {
@@ -261,9 +265,8 @@ function MtyInterpreter(ast, printfn, readfn){
         }
     }
 
-    _actions['Block'] = function(node) {
+     _actions['Block'] = function(node) {
         _blockStack.push(node);
-
         var stmts = node.statements;
         for(var i = 0; i < stmts.length; i++){
             _eval(stmts[i]);
@@ -272,7 +275,6 @@ function MtyInterpreter(ast, printfn, readfn){
                 break;
             }
         }
-
         _blockStack.pop();
     }
 

@@ -6018,6 +6018,11 @@ var mtyParser = (function() {
             this.isStatement = function(){return true;};
         }
 
+        this.createFunctionCall = function(pos, endPos, functionName, parameters,
+                                        type){
+            return new FunctionCall(pos, endPos, functionName, parameters, type);
+        }
+
         // ---------------------------------------------------------------
         
         VariableDeclaration.prototype = new Declaration();
@@ -6074,7 +6079,7 @@ var mtyParser = (function() {
                                                         member.type,
                                                         member.constant));
                 }
-                for(var member in this.block._functionDeclarations){
+                for(var name in this.block._functionDeclarations){
                     var member = this.block._functionDeclarations[name];
                     contents.push(new FunctionDeclaration(member.pos,
                                                         member.endPos,
@@ -6082,6 +6087,10 @@ var mtyParser = (function() {
                                                         member.parameters,
                                                         member.returnType,
                                                         member.body));
+                }
+                // statements do not have to be copied
+                for(var i = 0; i < this.block.statements.length; i++){
+                    contents.push(this.block.statements[i]);
                 }
                 var body = new Block(this.pos, this.endPos, contents, "class");
                 return new MtyObject(callNode.pos, callNode.endPos, body,
