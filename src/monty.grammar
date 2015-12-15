@@ -185,6 +185,23 @@
 
     // ---------------------------------------------------------------
     
+    MethodCall.prototype = new Expression();
+    MethodCall.prototype.constructor = MethodCall;
+    function MethodCall(memberAccess){
+        this.memberAccess = memberAccess;
+        this.name = "MethodCall";
+        this.pos = memberAccess.pos;
+        this.endPos = memberAccess.endPos;
+        this.isStatement = function(){return true;};
+    }
+
+//    this.createMethodCall = function(pos, endPos, functionName, parameters,
+//                                    type){
+//        return new FunctionCall(pos, endPos, functionName, parameters, type);
+//    }
+
+    // ---------------------------------------------------------------
+    
     VariableDeclaration.prototype = new Declaration();
     VariableDeclaration.prototype.constructor = VariableDeclaration;
     function VariableDeclaration(pos, endPos, varName, type, constant){
@@ -696,6 +713,7 @@ defaultParameterList = head:declWithAssignment
             }
 
 statement = declaration
+        / methodCallStm
         / functionCallStm
         / whileStatement
         // forStatement
@@ -709,6 +727,24 @@ statement = declaration
         // caseStatement
 
 functionCallStm = call:functionCall EOL { return call; }
+methodCallStm = m:memberAccess EOL
+                &{
+                    var node = m;
+                    while(node.right != undefined){
+                        if(node.right.name == "FunctionCall"){
+                            return true;
+                        }
+                        else{
+                            node = node.right;
+                        }
+                    }
+                    return false;
+                }
+                {
+                    return new MethodCall(m);
+                }
+
+
 
 stmWithEOL = stm:commandStm EOL {return stm;}
             / left:expression operator:'.' right:functionCall EOL

@@ -143,6 +143,10 @@ function MtyInterpreter(ast, printfn, readfn){
         return _resolveSelf();
     }
 
+    _actions['MethodCall'] = function(node) {
+        _eval(node.memberAccess);
+    }
+
     var classInstantiation = function(node, clsDecl){
         var instance = clsDecl.createInstance(node);
         instance.block.instance = instance;
@@ -185,8 +189,8 @@ function MtyInterpreter(ast, printfn, readfn){
             }
             else{
                 var contents = [];
-                var argc = node.parameters.length;
-                var parc = funDecl.parameters.length;
+                var argc = node.parameters ? node.parameters.length : 0;
+                var parc = funDecl.parameters ? funDecl.parameters.length : 0;
 
                 for(var i=0; i < parc; i++){
                     if(i < argc){

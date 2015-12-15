@@ -24,12 +24,24 @@ if(isset($_POST["overwrite"])){
     ?>
     </textarea>
 
-    <textarea id="mtycode" style="min-width: 800px; min-height: 250px;">if true:
-    foo1
-    if false:
-        foo2
-    foo3
-foo4</textarea>
+    <textarea id="mtycode" style="min-width: 800px; min-height: 250px;">class Point:
+    Int x := 1
+    Int y
+
+    + initializer(Int x, Int y):
+        self.x := x
+        self.y := y
+
+    + move(Int x, Int y):
+        self.x += x
+        self.y += y
+
+Point p := Point(5,7)
+p.move(1,1)
+print(p.x)
+print(" ")
+println(p.y)
+</textarea>
     <div style="display: inline-block">
         <button id="overwrite" onclick="generate('source')">overwrite version on server</button><br/>
         <button id="generate" onclick="generate()">generate grammar</button><br/>
