@@ -545,6 +545,7 @@
 /*start = _begin*/
 
 moduleDeclaration = /*importLine* */
+    EmptyLineOrComment*
     contents:(classDeclaration / statement)*
     { return new Block(getCurrentPos(),
         getCurrentEndPos(),
