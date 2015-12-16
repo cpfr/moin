@@ -943,8 +943,8 @@ primary = Lparenthesis exp:expression Rparenthesis { return exp }
                                         getCurrentEndPos(), name); }
         // 'parent(' parent:type ')'
 
-literal = IntLiteral
-        / FloatLiteral
+literal = FloatLiteral
+        / IntLiteral
         / CharLiteral
         / StringLiteral
         / BoolLiteral

@@ -3971,9 +3971,9 @@ var mtyParser = (function() {
     function peg$parseliteral() {
       var s0;
 
-      s0 = peg$parseIntLiteral();
+      s0 = peg$parseFloatLiteral();
       if (s0 === peg$FAILED) {
-        s0 = peg$parseFloatLiteral();
+        s0 = peg$parseIntLiteral();
         if (s0 === peg$FAILED) {
           s0 = peg$parseCharLiteral();
           if (s0 === peg$FAILED) {
