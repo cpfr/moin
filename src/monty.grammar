@@ -177,6 +177,7 @@
         this.functionName = functionName;
         this.parameters = parameters;
         this.type = type || null;
+        this.isMemberAccess = false;
         /* FIXME: brauche ich type?*/
 
         /* function calls are also statements */
@@ -289,6 +290,7 @@
         this.pos = pos;
         this.endPos = endPos;
         this.variableName = varName;
+        this.isMemberAccess = false;
     }
 
     this.createVariableAccess = function(pos, endPos, varName){
