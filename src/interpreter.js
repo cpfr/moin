@@ -157,8 +157,14 @@ function MtyInterpreter(ast, printfn, readfn){
         // call the initializer (if there is one)
         _blockStack.push(clsDecl.block);
         _blockStack.push(instance.block);
-        _eval(mtyParser.createFunctionCall(node.pos, node.endPos, "initializer",
-                                node.parameters));
+        try{
+            _eval(mtyParser.createFunctionCall(node.pos, node.endPos,
+                                    "initializer", node.parameters));
+        } catch(err) {
+            if(err.msg != "The function 'initializer' could not be resolved."){
+                throw(err);
+            }
+        }
         _blockStack.pop();
         _blockStack.pop();
 
