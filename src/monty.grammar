@@ -816,7 +816,7 @@ compoundAssignment = left:expression _ op:compoundSymbol '='
                     left, compound);
             }
 
-compoundSymbol = '+' / '-' / '*' / '/' / '%' / '^'
+compoundSymbol = '+' / '-' / '*' / ('/' !('/'))  / '%' / '^'
 
 
 functionCall = funName:(type / Identifier)
@@ -913,7 +913,7 @@ addExpression = lefts:(exp:mulExpression _
                 { return leftAssociative(lefts, right); }
 
 mulExpression = lefts:(exp:powExpression _ 
-                op:(_nocompound_ op:('*' / '/' / '%' )
+                op:(_nocompound_ op:('*' / ('/' !('/')) / '%' )
                     { return { op:op, pos:getCurrentPos(), 
                         endPos : getCurrentEndPos() }; }) _ 
                     { return {exp:exp, op:op.op, pos:op.pos,
@@ -937,7 +937,8 @@ memberAccess = lefts:(exp:nonBinaryExpression _
                 right:nonBinaryExpression
                 { return leftAssociative(lefts, right); }
 
-functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis '->' expression
+functionExpression = Lparenthesis parameterListWithoutDefaults? Rparenthesis
+                    '->' expression
 
 primary = Lparenthesis exp:expression Rparenthesis { return exp }
         / literal
@@ -1116,7 +1117,7 @@ UppercaseLetter = [A-Z]
 
 // -- EOL INDENT DEDENT ----------------------------------
 
-EOL = _  CRLF /* eat at least one EOL */
+EOL = Comment? CRLF /* eat at least one EOL */
     /* eat as many empty lines and comment lines as possible */
     EmptyLineOrComment*
     /* eat a number of WS and check against the current indentation level */
@@ -1144,7 +1145,8 @@ EOL = _  CRLF /* eat at least one EOL */
     }
 
 
-EmptyLineOrComment =  _ ('//' (!CRLF .)*)? CRLF
+Comment = _ ('//' (!CRLF .)*)
+EmptyLineOrComment =  Comment? CRLF
 CRLF = ('\r\n' / '\r' / '\n')
 
 /*EOL = _ ('\r\n' / '\r' / '\n')+ { return "EOL"; }*/
