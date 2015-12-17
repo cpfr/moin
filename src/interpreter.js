@@ -69,16 +69,26 @@ function MtyInterpreter(ast, printfn, readfn){
     var _resolveVariable = function(variableName, isMemberAccess){
         var blockIndex = _blockStack.length-1;
         var result = undefined;
-        while((result == undefined)&&(blockIndex >= 0)){
-            result = _blockStack[blockIndex].resolveVariable(variableName);
-            if((!isMemberAccess)
-                &&(_blockStack[blockIndex].blockType == "class")) { break; }
-            if(isMemberAccess
-                && (_blockStack[blockIndex].blockType == "class"))
-            {
-                break;
+        if(isMemberAccess){
+            var classBlock = {blockType : undefined};
+            while((classBlock.blockType != "class")&&(blockIndex >= 0)){
+                classBlock = _blockStack[blockIndex];
+                blockIndex--;
             }
-            blockIndex--;
+            if(classBlock.blockType == "class"){
+                result = classBlock.resolveVariable(variableName);
+            }
+        }
+        else {
+            while((result == undefined)&&(blockIndex >= 0)){
+                if((_blockStack[blockIndex].blockType != "class")
+                    ||(_blockStack[blockIndex] == _blockStack.peek()))
+                {
+                    result = _blockStack[blockIndex]
+                                .resolveVariable(variableName);
+                }
+                blockIndex--;
+            }
         }
         return result;
     }
@@ -87,16 +97,26 @@ function MtyInterpreter(ast, printfn, readfn){
         var blockIndex = _blockStack.length-1;
         var result = undefined;
         // TODO: overload resolution
-        while((result == undefined)&&(blockIndex >= 0)){
-            result = _blockStack[blockIndex].resolveFunction(functionName);
-            if((!isMemberAccess)
-                &&(_blockStack[blockIndex].blockType == "class")) { break; }
-            if(isMemberAccess
-                && (_blockStack[blockIndex].blockType == "class"))
-            {
-                break;
+        if(isMemberAccess){
+            var classBlock = {blockType : undefined};
+            while((classBlock.blockType != "class")&&(blockIndex >= 0)){
+                classBlock = _blockStack[blockIndex];
+                blockIndex--;
             }
-            blockIndex--;
+            if(classBlock.blockType == "class"){
+                result = classBlock.resolveFunction(functionName);
+            }
+        }
+        else {
+            while((result == undefined)&&(blockIndex >= 0)){
+                if((_blockStack[blockIndex].blockType != "class")
+                    ||(_blockStack[blockIndex] == _blockStack.peek()))
+                {
+                    result = _blockStack[blockIndex]
+                            .resolveFunction(functionName);
+                }
+                blockIndex--;
+            }
         }
         return result;
     }
