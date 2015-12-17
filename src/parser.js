@@ -6075,7 +6075,8 @@ var mtyParser = (function() {
 
         this.createObject = function(pos, endPos, block, type){
             return new MtyObject(pos, endPos, block, type);
-        }
+        };
+
         // ---------------------------------------------------------------
         
         SelfExpression.prototype = new Expression();
@@ -6091,6 +6092,10 @@ var mtyParser = (function() {
                 return this.value;
             }
         }
+
+        this.createSelfExpression = function(pos, endPos, value, type){
+            return new SelfExpression(pos, endPos, value, type);
+        };
 
         // ---------------------------------------------------------------
         
@@ -6128,7 +6133,7 @@ var mtyParser = (function() {
         this.createFunctionCall = function(pos, endPos, functionName, parameters,
                                         type){
             return new FunctionCall(pos, endPos, functionName, parameters, type);
-        }
+        };
 
         // ---------------------------------------------------------------
         
@@ -6142,10 +6147,10 @@ var mtyParser = (function() {
             this.isStatement = function(){return true;};
         }
 
-    //    this.createMethodCall = function(pos, endPos, functionName, parameters,
-    //                                    type){
-    //        return new FunctionCall(pos, endPos, functionName, parameters, type);
-    //    }
+        this.createMethodCall = function(pos, endPos, left, right){
+            return new MethodCall(new BinaryExpression(pos, endPos,
+                                                        left, ".", right));
+        };
 
         // ---------------------------------------------------------------
         
