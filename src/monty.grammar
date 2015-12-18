@@ -816,7 +816,7 @@ compoundAssignment = left:expression _ op:compoundSymbol '='
                     left, compound);
             }
 
-compoundSymbol = '+' / '-' / '*' / ('/' !('/'))  / '%' / '^'
+compoundSymbol = '+' / '-' / '*' / (o:'/' !('/') {return o;})  / '%' / '^'
 
 
 functionCall = funName:(type / Identifier)
@@ -913,7 +913,7 @@ addExpression = lefts:(exp:mulExpression _
                 { return leftAssociative(lefts, right); }
 
 mulExpression = lefts:(exp:powExpression _ 
-                op:(_nocompound_ op:('*' / ('/' !('/')) / '%' )
+                op:(_nocompound_ op:('*' / (o:'/' !('/') {return o;}) / '%' )
                     { return { op:op, pos:getCurrentPos(), 
                         endPos : getCurrentEndPos() }; }) _ 
                     { return {exp:exp, op:op.op, pos:op.pos,

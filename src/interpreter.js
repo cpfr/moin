@@ -580,11 +580,10 @@ function MtyInterpreter(ast, printfn, readfn){
 
      // '/':
     var _binOpDiv = function(left, right, result){
-        console.log(left.getValue(), right.getValue);
         if(left.type == "Int"){
             if(right.type == "Int") {
                 result.type = "Int";
-                result.value = left.getValue()/right.getValue();
+                result.value = Math.floor(left.getValue()/right.getValue());
                 return result;
             }
             else if(right.type == "Float"){
