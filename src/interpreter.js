@@ -213,6 +213,16 @@ function MtyInterpreter(ast, printfn, readfn){
         return instance;
     }
 
+    var formatValue = function(value){
+        var output = ""+value.getValue();
+        if(value.type == "Float"){
+            if(output.indexOf(".") < 0){
+                output += ".0";
+            }
+        }
+        return output;
+    }
+
     _actions['FunctionCall'] = function(node) {
         var clsDecl = _resolveClass(node.functionName);
         if(clsDecl != undefined){
@@ -224,11 +234,11 @@ function MtyInterpreter(ast, printfn, readfn){
                 switch(node.functionName){
                     case "print":
                         var param = _eval(node.parameters[0]);
-                        _printfn(""+param.getValue());
+                        _printfn(""+formatValue(param));
                         break;
                     case "println":
                         var param = _eval(node.parameters[0]);
-                        _printfn(""+param.getValue() + "\n");
+                        _printfn(""+formatValue(param) + "\n");
                         break;
                     default:
                         var funType = node.isMemberAccess ?
