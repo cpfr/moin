@@ -402,48 +402,54 @@ function MtyInterpreter(ast, printfn, readfn){
             return _memberAccess(node, lvalue);
         }
 
-        var left = _eval(node.left).getValue();
-        var right = _eval(node.right).getValue();
+        var left = _eval(node.left);
+        var right = _eval(node.right);
 
         // result = new Expression();
         result = mtyParser.createExpression();
         switch(node.op){
             case '+':
-                result.value = left + right;
+                result = _binOpAdd(left, right, result);
                 break;
             case '-':
-                result.value = left - right;
+                result = _binOpSub(left, right, result);
                 break;
             case '*':
-                result.value = left * right;
+                result = _binOpMul(left, right, result);
                 break;
             case '/':
-                result.value = left / right;
+                result = _binOpDiv(left, right, result);
                 break;
             case '%':
-                result.value = left % right;
+                result = _binOpMod(left, right, result);
                 break;
             case '^':
-                result.value = Math.pow(left, right);
+                result = _binOpPow(left, right, result);
                 break;
             case '=':
-                result.value = left === right;
+                result = _binOpEq(left, right, result);
                 break;
             case '!=':
-                result.value = left !== right;
+                result = _binOpNeq(left, right, result);
                 break;
             case '<':
-                result.value = left < right;
+                result = _binOpLt(left, right, result);
                 break;
             case '>':
-                result.value = left > right;
+                result = _binOpGt(left, right, result);
                 break;
             case '<=':
-                result.value = left <= right;
+                result = _binOpLeq(left, right, result);
                 break;
             case '>=':
-                result.value = left >= right;
+                result = _binOpGeq(left, right, result);
                 break;
+        }
+        if(result == undefined){
+            throw new ContextError(node.pos, node.endPos,
+                node, "Unsupported operation '"+node.op
+                    +"' for operand types '"+left.type
+                    +"' and '"+right.type+"'");
         }
         return result;
     }
@@ -479,4 +485,209 @@ function MtyInterpreter(ast, printfn, readfn){
             }
         }
     }
+
+
+    // -------------------------------------------------------------------------
+
+
+    // '+':
+    var _binOpAdd = function(left, right, result){
+        if(left.type == "String"){
+            if((right.type == "String")
+                ||(right.type == "Int")
+                ||(right.type == "Float"))
+            {
+                result.value = left.getValue()+right.getValue();
+                result.type = "String";
+                return result;
+            }
+        }
+        else if(left.type == "Int"){
+            if(right.type == "Int") {
+                result.type = "Int";
+                result.value = left.getValue()+right.getValue();
+                return result;
+            }
+            else if(right.type == "Float"){
+                result.type = "Float";
+                result.value = left.getValue()+right.getValue();
+                return result;
+            }
+        }
+        else if((left.type == "Float")&&((right.type == "Float")
+            ||(right.type == "Int"))) {
+                result.type = "Float";
+                result.value = left.getValue()+right.getValue();
+                return result;
+        }
+    };
+
+     // '-':
+    var _binOpSub = function(left, right, result){
+        if(left.type == "Int"){
+            if(right.type == "Int") {
+                result.type = "Int";
+                result.value = left.getValue()-right.getValue();
+                return result;
+            }
+            else if(right.type == "Float"){
+                result.type = "Float";
+                result.value = left.getValue()-right.getValue();
+                return result;
+            }
+        }
+        else if((left.type == "Float")&&((right.type == "Float")
+            ||(right.type == "Int"))) {
+                result.type = "Float";
+                result.value = left.getValue()-right.getValue();
+                return result;
+        }
+    };
+
+     // '*':
+    var _binOpMul = function(left, right, result){
+        if(left.type == "String"){
+            if(right.type == "Int")
+            {
+                var output = "";
+                for(var i = right.getValue(); i > 0; i--){
+                    output += left.getValue();
+                }
+                result.value = output;
+                result.type = "String";
+                return result;
+            }
+        }
+        else if(left.type == "Int"){
+            if(right.type == "Int") {
+                result.type = "Int";
+                result.value = left.getValue()*right.getValue();
+                return result;
+            }
+            else if(right.type == "Float"){
+                result.type = "Float";
+                result.value = left.getValue()*right.getValue();
+                return result;
+            }
+        }
+        else if((left.type == "Float")&&((right.type == "Float")
+            ||(right.type == "Int"))) {
+                result.type = "Float";
+                result.value = left.getValue()*right.getValue();
+                return result;
+        }
+    };
+
+     // '/':
+    var _binOpDiv = function(left, right, result){
+        console.log(left.getValue(), right.getValue);
+        if(left.type == "Int"){
+            if(right.type == "Int") {
+                result.type = "Int";
+                result.value = left.getValue()/right.getValue();
+                return result;
+            }
+            else if(right.type == "Float"){
+                result.type = "Float";
+                result.value = left.getValue()/right.getValue();
+                return result;
+            }
+        }
+        else if((left.type == "Float")&&((right.type == "Float")
+            ||(right.type == "Int"))) {
+                result.type = "Float";
+                result.value = left.getValue()/right.getValue();
+                return result;
+        }
+    };
+
+     // '%':
+    var _binOpMod= function(left, right, result){
+        if((left.type == "Int")&&(right.type == "Int")) {
+            result.type = "Int";
+            result.value = left.getValue()%right.getValue();
+            return result;
+        }
+    };
+
+     // '^':
+    var _binOpPow = function(left, right, result){
+        if(left.type == "Int"){
+            if(right.type == "Int") {
+                result.type = "Int";
+                result.value = Math.pow(left.getValue(), right.getValue());
+                return result;
+            }
+            else if(right.type == "Float"){
+                result.type = "Float";
+                result.value = Math.pow(left.getValue(), right.getValue());
+                return result;
+            }
+        }
+        else if((left.type == "Float")&&((right.type == "Float")
+            ||(right.type == "Int"))) {
+                result.type = "Float";
+                result.value = Math.pow(left.getValue(), right.getValue());
+                return result;
+        }
+    };
+
+     // '=':
+    var _binOpEq = function(left, right, result){
+        result.value = (left.getValue() === right.getValue())
+                        && (left.type == right.type);
+        result.type = "Bool";
+        return result;
+    };
+
+     // '!=':
+    var _binOpNeq = function(left, right, result){
+        result = _binOpEq(left, right, result);
+        result.value = !(result.value);
+        return result;
+    };
+
+     // '<':
+    var _binOpLt = function(left, right, result){
+        if(((left.type == "Int")||(left.type == "Float"))
+            &&((right.type == "Int")||(right.type == "Float"))){
+
+            result.value = left.getValue() < right.getValue();
+            result.type = "Bool";
+            return result;
+        }
+    };
+
+     // '>':
+    var _binOpGt = function(left, right, result){
+                if(((left.type == "Int")||(left.type == "Float"))
+            &&((right.type == "Int")||(right.type == "Float"))){
+
+            result.value = left.getValue() > right.getValue();
+            result.type = "Bool";
+            return result;
+        }
+    };
+
+     // '<=':
+    var _binOpLeq = function(left, right, result){
+                if(((left.type == "Int")||(left.type == "Float"))
+            &&((right.type == "Int")||(right.type == "Float"))){
+
+            result.value = left.getValue() <= right.getValue();
+            result.type = "Bool";
+            return result;
+        }
+    };
+
+     // '>=':
+    var _binOpGeq = function(left, right, result){
+        if(((left.type == "Int")||(left.type == "Float"))
+            &&((right.type == "Int")||(right.type == "Float"))){
+
+            result.value = left.getValue() >= right.getValue();
+            result.type = "Bool";
+            return result;
+        }
+    };
 }
