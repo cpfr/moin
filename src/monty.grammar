@@ -393,12 +393,12 @@
     
     UnaryExpression.prototype = new Expression();
     UnaryExpression.prototype.constructor = UnaryExpression;
-    function UnaryExpression(pos, endPos, op, value){
+    function UnaryExpression(pos, endPos, op, expression){
         this.name = "UnaryExpression";
         this.pos = pos;
         this.endPos = endPos;
         this.op = op;
-        this.value = value;
+        this.expression = expression;
     }
 
     BinaryExpression.prototype = new Expression();
@@ -848,8 +848,12 @@ nonBinaryExpression = functionCall
             / listComprehension
             */
 
-unaryExpression = op:('-' / 'not') exp:nonBinaryExpression
-                    { return new UnaryExpression(op, exp); }
+unaryExpression = op:(o:('-' / 'not')
+                        {return { op:o, pos : getCurrentPos(),
+                            endPos : getCurrentEndPos() };})
+                    exp:nonBinaryExpression
+                    { return new UnaryExpression(op.pos, op.endPos,
+                                                op.op, exp); }
 
 asExpression = lefts:(exp:orExpression _ 
                 op:(op:'as' _nonchar_ {
