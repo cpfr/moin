@@ -13,14 +13,18 @@ A live demo can be found [here](http://htmlpreview.github.io/?https://github.com
 
 ### Usage
 
-#### With web workers
-When using **moin** on a web page, it is recommended to use web workers. 
+Since the execution of a Monty program may take some time, the browser
+window will freeze while the program is interpreted. To avoid that, web workers
+can be used. Web workers are threads for Javascript. **moin** is able to
+automatically detect whether web workers are available. If yes, a web worker
+thread will be started for the interpretation of the Monty program. If not,
+the browser window will freeze during execution. The user of the library does
+not have to care about web workers.
+
 For **moin** to work properly, the four files ``moin.js``, ``parser.js``,
 ``interpreter.js`` and ``worker.js`` must be copied into your project folder. 
 However, only the ``moin.js`` file must be included in the HTML file, the other 
 files are loaded dynamically.
-The following example uses web workers implicitly (the worker is started inside
-the ``moin`` function). The user does not have to worry about workers:
 
 ```html
 <script type="application/javascript" src="moin.js"></script>
@@ -57,27 +61,6 @@ moin("println(55)", {
 - ``scriptpath`` this parameter specifies where the **moin** javascript files 
    are located. If omitted, it is assumed that they reside in the same directoy
    as the HTML document.
-
-#### Without web workers
-Using **moin** without web workers should only be done if web workers are not
-available (e.g. if it is not executed inside a browser). Without web workers,
-only the two files ``parser.js`` and ``interpreter.js`` are required. Both have
-to be added to the HTML document. The following example shows how to first parse
-a program and then pass the abstract syntax tree (AST) to the interpreter.
-The interpreter constructor takes two additional optional parameters, a print
-function and a read function (see description above):
-
-```html
-<script type="application/javascript" src="src/parser.js"></script>
-<script type="application/javascript" src="src/interpreter.js"></script>
-
-<script type="application/javascript">
-    var myCode = "println(\"Hello World!\")";
-    var ast = mtyParser.parse(myCode+"\n");
-    var interpreter = new MtyInterpreter(ast, printfn, readfn);
-    interpreter.run();
-</script>
-```
 
 ### License
 The MIT license is a very permissive open source license. See the 

@@ -225,9 +225,7 @@ println(p.y)
     </div>
     <textarea id="output" readonly="readonly"></textarea>
 
-    <script type="application/javascript" src="src/parser.js"></script>
-    <script type="application/javascript" src="src/interpreter.js"></script>
-    
+    <script type="application/javascript" src="src/moin.js"></script>
     <script type="application/javascript">
         function print(msg){
             var output = document.getElementById("output")
@@ -238,33 +236,33 @@ println(p.y)
         function clearOutput(){
             document.getElementById("output").value = "";
         }
+
+        function onError(error){
+            if(error.type == "ContextError"){
+                print("\nERROR: "+error+"\n");
+            }
+            else if(error.type == "SyntaxError"){
+                print(error+"\n");
+            }
+            else{
+                alert(error);
+            }
+        }
        
         function parse(){
             var coconut = document.getElementById("coconut");
             coconut.className += " spinning";
 
-            setTimeout(
-                function(){
-                    var codeInput = document.getElementById("input")
-                    try{
-                        var ast = mtyParser.parse(codeInput.value+"\n");
-                        var interpreter = new MtyInterpreter(ast, print);
-                        interpreter.run();
-                    }catch(err){
-                        // if(err.location !== undefined){
-                        //     alert("ERROR at line "+err.location.start.line+
-                        //         ":"+err.location.start.column+" >> "+err);
-                        // }
-                        // else if(err.msg !== undefined){
-                        //     alert(err.msg);
-                        // }
-                        // else{
-                            console.log(err);
-                            alert(err.toString());
-                        // }
-                    }
-                    coconut.className = coconut.className.replace(/\bspinning\b/,'');
-                }, 20);
+            var codeInput = document.getElementById("input")
+            moin(codeInput.value, {
+                print      : print,
+                err        : onError,
+                scriptpath : "src",
+                done       : function(){
+                    coconut.className = coconut.className
+                                        .replace(/\bspinning\b/,'');
+                }
+            });
         }
     </script>
   </body>
