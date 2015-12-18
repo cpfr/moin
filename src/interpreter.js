@@ -242,6 +242,22 @@ function MtyInterpreter(ast, printfn, readfn){
                 var contents = [];
                 var argc = node.parameters ? node.parameters.length : 0;
                 var parc = funDecl.parameters ? funDecl.parameters.length : 0;
+                var defc = funDecl.parameters.filter(
+                    function(e){return Array.isArray(e);}).length;
+
+                if(argc != parc){
+                    if(defc == 0){
+                        throw new ContextError(node.pos, node.endPos,
+                            node, "The function '"+node.functionName
+                                +"' takes exactly "+parc+" parameters, "
+                                +argc+" were given");
+                    } else if((argc < (parc-defc))||(argc > parc)) {
+                        throw new ContextError(node.pos, node.endPos,
+                            node, "The function '"+node.functionName
+                                +"' takes "+(parc-defc)+" to "+parc
+                                +" parameters, "+argc+" were given");
+                    }
+                }
 
                 for(var i=0; i < parc; i++){
                     if(i < argc){
